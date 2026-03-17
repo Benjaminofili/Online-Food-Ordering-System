@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Review {{ restaurant.name }}</h2>
+
+<form method="POST" class="mt-4">
+    <div class="mb-3">
+        <label class="form-label">Rating</label>
+        <select name="rating" class="form-select" required>
+            <option value="">Select a rating (1-5)</option>
+            <option value="5" {% if review and review.rating == 5 %}selected{% endif %}>5 - Excellent</option>
+            <option value="4" {% if review and review.rating == 4 %}selected{% endif %}>4 - Very Good</option>
+            <option value="3" {% if review and review.rating == 3 %}selected{% endif %}>3 - Good</option>
+            <option value="2" {% if review and review.rating == 2 %}selected{% endif %}>2 - Fair</option>
+            <option value="1" {% if review and review.rating == 1 %}selected{% endif %}>1 - Poor</option>
+        </select>
+    </div>
+    
+    <div class="mb-3">
+        <label class="form-label">Comment</label>
+        <textarea name="comment" class="form-control" rows="4">{{ review.comment if review else '' }}</textarea>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Submit Review</button>
+    <a href="{{ url_for('customer.my_orders') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

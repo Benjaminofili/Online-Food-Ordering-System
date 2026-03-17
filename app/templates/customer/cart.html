@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Your Cart</h2>
+{% if not cart_items %}
+    <div class="alert alert-info">Your cart is currently empty.</div>
+    <a href="{{ url_for('customer.dashboard') }}" class="btn btn-primary">Browse Restaurants</a>
+{% else %}
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Dish</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cart_items %}
+            <tr>
+                <td class="align-middle">{{ item.dish.name }}</td>
+                <td class="align-middle">${{ item.dish.price }}</td>
+                <td class="align-middle">
+                    <div class="d-flex align-items-center">
+                        <form method="POST" action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='decrease') }}" class="m-0">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary px-2">-</button>
+                        </form>
+                        <span class="mx-2">{{ item.quantity }}</span>
+                        <form method="POST" action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='increase') }}" class="m-0">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary px-2">+</button>
+                        </form>
+                    </div>
+                </td>
+                <td class="align-middle">${{ "%.2f"|format(item.subtotal) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" class="text-end fw-bold">Total:</td>
+                <td class="fw-bold fs-5">${{ "%.2f"|format(total) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+    
+    <div class="d-flex justify-content-between mt-4">
+        <div>
+            <form method="POST" action="{{ url_for('customer.clear_cart') }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger">Clear Cart</button>
+            </form>
+            <a href="{{ url_for('customer.dashboard') }}" class="btn btn-secondary ms-2">Continue Shopping</a>
+        </div>
+        <a href="{{ url_for('customer.checkout') }}" class="btn btn-success btn-lg">Proceed to Checkout</a>
+    </div>
+{% endif %}
+{% endblock %}

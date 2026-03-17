@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>My Orders</h2>
+{% if not orders %}
+    <div class="alert alert-info">You haven't placed any orders yet.</div>
+    <a href="{{ url_for('customer.dashboard') }}" class="btn btn-primary">Browse Restaurants</a>
+{% else %}
+    <div class="row mt-4">
+        {% for order in orders %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Order #{{ order.id }}</span>
+                    <span class="badge bg-{{ 'success' if order.status == 'delivered' else 'warning' }}">{{ order.status }}</span>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ order.restaurant.name }}</h5>
+                    <p class="card-text text-muted mb-2">{{ order.order_date.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                    <hr>
+                    <ul class="list-unstyled mb-3">
+                        {% for item in order.items %}
+                        <li>{{ item.quantity }}x {{ item.dish.name }} <span class="float-end">${{ "%.2f"|format(item.price * item.quantity) }}</span></li>
+                        {% endfor %}
+                    </ul>
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>Total:</span>
+                        <span>${{ "%.2f"|format(order.total_amount) }}</span>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent text-end">
+                    {% if order.status == 'delivered' %}
+                        <a href="{{ url_for('customer.leave_review', id=order.restaurant_id) }}" class="btn btn-sm btn-outline-primary">Leave Review</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}

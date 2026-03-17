@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Manage Categories</h2>
+<form method="POST" action="{{ url_for('admin.categories') }}" class="mb-4 d-flex">
+    <input type="text" name="name" class="form-control me-2" placeholder="New Category Name" required>
+    <button type="submit" class="btn btn-primary">Add</button>
+</form>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cat in categories %}
+        <tr>
+            <td>{{ cat.id }}</td>
+            <td>{{ cat.name }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('admin.delete_category', id=cat.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

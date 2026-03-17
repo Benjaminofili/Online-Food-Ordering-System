@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Restaurants Report</h2>
+<table class="table table-striped mt-3">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Owner</th>
+            <th>Contact</th>
+            <th>Joined</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for rest in restaurants %}
+        <tr>
+            <td>{{ rest.id }}</td>
+            <td>{{ rest.name }}</td>
+            <td>{{ rest.owner.name if rest.owner else 'N/A' }}</td>
+            <td>{{ rest.contact }}</td>
+            <td>{{ rest.created_at.strftime('%Y-%m-%d') if rest.created_at else '' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Manage Dishes</h2>
+    <a href="{{ url_for('owner.add_dish') }}" class="btn btn-primary">Add New Dish</a>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Image</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Avail</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for dish in dishes %}
+        <tr>
+            <td>
+                {% if dish.image_url %}
+                <img src="{{ dish.image_url }}" alt="dish" width="50" height="50" style="object-fit: cover;">
+                {% else %}
+                <div style="width: 50px; height: 50px; background-color: #eee;"></div>
+                {% endif %}
+            </td>
+            <td>{{ dish.name }}</td>
+            <td>{{ dish.category.name if dish.category else '' }} ({{ dish.food_type.name if dish.food_type else '' }})</td>
+            <td>${{ dish.price }}</td>
+            <td>
+                <span class="badge bg-{{ 'success' if dish.is_available else 'danger' }}">
+                    {{ 'Yes' if dish.is_available else 'No' }}
+                </span>
+            </td>
+            <td>
+                <a href="{{ url_for('owner.edit_dish', id=dish.id) }}" class="btn btn-sm btn-info">Edit</a>
+                <form method="POST" action="{{ url_for('owner.delete_dish', id=dish.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<a href="{{ url_for('owner.dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+{% endblock %}

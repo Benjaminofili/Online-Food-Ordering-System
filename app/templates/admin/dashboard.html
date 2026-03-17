@@ -1,6 +1,37 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Admin Dashboard</h1>
-<p>Welcome, {{ current_user.name }}! This is the admin area.</p>
-<p>Here you will be able to manage categories, food types, and view reports.</p>
+<h2>Admin Dashboard</h2>
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Customers</h5>
+                <p class="card-text fs-3">{{ users_count }}</p>
+                <a href="{{ url_for('admin.customers_report') }}" class="text-white">View Customers</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Restaurants</h5>
+                <p class="card-text fs-3">{{ restaurants_count }}</p>
+                <a href="{{ url_for('admin.restaurants_report') }}" class="text-white">View Restaurants</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Orders</h5>
+                <p class="card-text fs-3">{{ orders_count }}</p>
+                <a href="{{ url_for('admin.all_orders') }}" class="text-white">View Orders</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="mt-4">
+    <a href="{{ url_for('admin.categories') }}" class="btn btn-secondary">Manage Categories</a>
+    <a href="{{ url_for('admin.food_types') }}" class="btn btn-secondary">Manage Food Types</a>
+</div>
 {% endblock %}

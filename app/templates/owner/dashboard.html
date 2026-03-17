@@ -1,6 +1,62 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Restaurant Owner Dashboard</h1>
-<p>Welcome, {{ current_user.name }}! This is your owner area.</p>
-<p>Here you will be able to manage your dishes and view orders.</p>
+<h2>Owner Dashboard</h2>
+{% if not restaurant %}
+    <div class="alert alert-warning">
+        You have not set up your restaurant profile. <a href="{{ url_for('owner.profile') }}" class="alert-link">Do it now</a>.
+    </div>
+{% else %}
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card bg-light mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ restaurant.name }}</h5>
+                    <p class="card-text">{{ restaurant.address }}</p>
+                    <a href="{{ url_for('owner.profile') }}" class="btn btn-primary btn-sm">Edit Profile</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Dishes</h5>
+                    <p class="card-text fs-3">{{ dishes_count }}</p>
+                    <a href="{{ url_for('owner.dishes') }}" class="text-white">Manage Dishes</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Orders</h5>
+                    <a href="{{ url_for('owner.orders') }}" class="text-white mt-3 d-block">Manage Orders</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <h4 class="mt-4">Recent Orders</h4>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Total</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in recent_orders %}
+            <tr>
+                <td>{{ order.id }}</td>
+                <td>{{ order.customer.name }}</td>
+                <td>${{ order.total_amount }}</td>
+                <td><span class="badge bg-secondary">{{ order.status }}</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4">No recent orders.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
 {% endblock %}

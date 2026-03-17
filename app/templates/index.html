@@ -1,6 +1,44 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1>Welcome to Online Food Ordering</h1>
-    <p>Search for restaurants and order your favorite food!</p>
-    <!-- Search bar will go here -->
+<div class="px-4 py-5 my-5 text-center">
+    <h1 class="display-5 fw-bold mb-3">🍔 Welcome to FoodOrder</h1>
+    <div class="col-lg-6 mx-auto">
+        <p class="lead mb-4">Discover the best food and drinks in your city. From local favorites to popular chains, we've got you covered with our easy-to-use platform.</p>
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+            {% if current_user.is_authenticated %}
+                {% if current_user.role == 'customer' %}
+                    <a href="{{ url_for('customer.dashboard') }}" class="btn btn-primary btn-lg px-4 gap-3">Browse Restaurants</a>
+                {% elif current_user.role == 'owner' %}
+                    <a href="{{ url_for('owner.dashboard') }}" class="btn btn-primary btn-lg px-4 gap-3">Go to Dashboard</a>
+                {% else %}
+                    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-primary btn-lg px-4 gap-3">Go to Dashboard</a>
+                {% endif %}
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg px-4 gap-3">Login to Order</a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-outline-secondary btn-lg px-4">Create Account</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
+    <div class="col d-flex align-items-start">
+        <div>
+            <h2>Wide Selection</h2>
+            <p>Explore menus from dozens of local restaurants and find exactly what you're craving today.</p>
+        </div>
+    </div>
+    <div class="col d-flex align-items-start">
+        <div>
+            <h2>Easy Ordering</h2>
+            <p>Add items to your cart, customize your meal, and checkout securely in just a few clicks.</p>
+        </div>
+    </div>
+    <div class="col d-flex align-items-start">
+        <div>
+            <h2>Fast Delivery</h2>
+            <p>Track your order status directly from your dashboard and enjoy hot, fresh food delivered to your door.</p>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Manage Food Types</h2>
+<form method="POST" action="{{ url_for('admin.food_types') }}" class="mb-4 d-flex">
+    <input type="text" name="name" class="form-control me-2" placeholder="New Food Type (e.g. Veg)" required>
+    <button type="submit" class="btn btn-primary">Add</button>
+</form>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ft in food_types %}
+        <tr>
+            <td>{{ ft.id }}</td>
+            <td>{{ ft.name }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('admin.delete_food_type', id=ft.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
