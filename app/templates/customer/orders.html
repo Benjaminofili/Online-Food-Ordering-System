@@ -1,36 +1,68 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>My Orders</h2>
+<div class="d-flex align-items-center mb-4 mt-3">
+    <h2 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>My Order History</h2>
+</div>
 {% if not orders %}
-    <div class="alert alert-info">You haven't placed any orders yet.</div>
-    <a href="{{ url_for('customer.dashboard') }}" class="btn btn-primary">Browse Restaurants</a>
+    <div class="alert alert-info border-info shadow-sm d-flex align-items-center p-4 rounded-3">
+        <i class="bi bi-info-circle-fill fs-3 me-3"></i>
+        <div>
+            <h5 class="alert-heading mb-1 fw-bold">No orders found.</h5>
+            <p class="mb-0">You haven't placed any orders with us yet. Ready to try something delicious?</p>
+        </div>
+    </div>
+    <div class="mt-4">
+        <a href="{{ url_for('customer.dashboard') }}" class="btn btn-outline-primary rounded-pill px-4 py-2"><i class="bi bi-search me-1"></i> Browse Restaurants</a>
+    </div>
 {% else %}
-    <div class="row mt-4">
+    <div class="row mt-4 g-4 mb-5">
         {% for order in orders %}
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Order #{{ order.id }}</span>
-                    <span class="badge bg-{{ 'success' if order.status == 'delivered' else 'warning' }}">{{ order.status }}</span>
+        <div class="col-md-6 col-lg-4">
+            <div class="card bg-dark border-secondary shadow-sm h-100 hover-elevate">
+                <div class="card-header bg-black bg-opacity-25 border-secondary py-3 d-flex justify-content-between align-items-center">
+                    <span class="font-monospace text-muted fw-bold">Order #{{ order.id }}</span>
+                    {% if order.status == 'pending' %}
+                        <span class="badge bg-warning text-dark rounded-pill px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Pending</span>
+                    {% elif order.status == 'accepted' or order.status == 'preparing' %}
+                        <span class="badge bg-info text-dark rounded-pill px-2 py-1"><i class="bi bi-fire me-1"></i> {{ order.status|title }}</span>
+                    {% elif order.status == 'out for delivery' %}
+                        <span class="badge bg-primary rounded-pill px-2 py-1"><i class="bi bi-truck me-1"></i> Delivering</span>
+                    {% elif order.status == 'delivered' %}
+                        <span class="badge bg-success rounded-pill px-2 py-1"><i class="bi bi-check-circle me-1"></i> Delivered</span>
+                    {% elif order.status == 'cancelled' %}
+                        <span class="badge bg-danger rounded-pill px-2 py-1"><i class="bi bi-x-circle me-1"></i> Cancelled</span>
+                    {% else %}
+                        <span class="badge bg-secondary rounded-pill px-2 py-1">{{ order.status|title }}</span>
+                    {% endif %}
                 </div>
-                <div class="card-body">
-                    <h5 class="card-title">{{ order.restaurant.name }}</h5>
-                    <p class="card-text text-muted mb-2">{{ order.order_date.strftime('%B %d, %Y at %I:%M %p') }}</p>
-                    <hr>
-                    <ul class="list-unstyled mb-3">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-3 d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+                            <i class="bi bi-shop text-primary"></i>
+                        </div>
+                        <div>
+                            <h5 class="card-title fw-bold mb-0 text-light">{{ order.restaurant.name }}</h5>
+                            <p class="card-text text-muted small mb-0">{{ order.order_date.strftime('%b %d, %Y - %I:%M %p') }}</p>
+                        </div>
+                    </div>
+                    
+                    <ul class="list-unstyled mb-4 flex-grow-1 bg-black bg-opacity-25 p-3 rounded border border-secondary">
                         {% for item in order.items %}
-                        <li>{{ item.quantity }}x {{ item.dish.name }} <span class="float-end">${{ "%.2f"|format(item.price * item.quantity) }}</span></li>
+                        <li class="d-flex justify-content-between text-light opacity-75 mb-2 frow-bold">
+                            <span><span class="text-secondary fw-bold me-1">{{ item.quantity }}x</span> {{ item.dish.name }}</span>
+                            <span class="font-monospace text-muted">${{ "%.2f"|format(item.price * item.quantity) }}</span>
+                        </li>
                         {% endfor %}
                     </ul>
-                    <hr>
-                    <div class="d-flex justify-content-between fw-bold">
-                        <span>Total:</span>
-                        <span>${{ "%.2f"|format(order.total_amount) }}</span>
+                    
+                    <div class="d-flex justify-content-between align-items-center border-top border-secondary pt-3 mt-auto">
+                        <span class="text-uppercase text-muted letter-spacing-wide small fw-bold">Total</span>
+                        <span class="fs-4 fw-bold text-warning">${{ "%.2f"|format(order.total_amount) }}</span>
                     </div>
                 </div>
-                <div class="card-footer bg-transparent text-end">
+                <div class="card-footer bg-black bg-opacity-50 border-secondary p-3 {{ 'd-flex justify-content-end' if order.status == 'delivered' else 'd-none' }}">
                     {% if order.status == 'delivered' %}
-                        <a href="{{ url_for('customer.leave_review', id=order.restaurant_id) }}" class="btn btn-sm btn-outline-primary">Leave Review</a>
+                        <a href="{{ url_for('customer.leave_review', id=order.restaurant_id) }}" class="btn btn-sm btn-outline-warning rounded-pill px-4 fw-bold"><i class="bi bi-star-fill me-1"></i> Rate & Review</a>
                     {% endif %}
                 </div>
             </div>

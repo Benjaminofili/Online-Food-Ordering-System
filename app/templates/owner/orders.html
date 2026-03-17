@@ -1,43 +1,76 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Manage Orders</h2>
-<table class="table table-striped mt-3">
-    <thead>
-        <tr>
-            <th>Order ID</th>
-            <th>Date</th>
-            <th>Customer</th>
-            <th>Total</th>
-            <th>Status</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for order in orders %}
-        <tr>
-            <td>{{ order.id }}</td>
-            <td>{{ order.order_date.strftime('%Y-%m-%d %H:%M') if order.order_date else '' }}</td>
-            <td>{{ order.customer.name }}<br><small>{{ order.delivery_address }}</small></td>
-            <td>${{ order.total_amount }}</td>
-            <td>
-                <span class="badge bg-{{ 'success' if order.status == 'delivered' else 'warning' }}">{{ order.status }}</span>
-            </td>
-            <td>
-                <form method="POST" action="{{ url_for('owner.update_order', id=order.id) }}" class="d-flex">
-                    <select name="status" class="form-select form-select-sm me-2">
-                        <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
-                        <option value="accepted" {% if order.status == 'accepted' %}selected{% endif %}>Accepted</option>
-                        <option value="preparing" {% if order.status == 'preparing' %}selected{% endif %}>Preparing</option>
-                        <option value="out for delivery" {% if order.status == 'out for delivery' %}selected{% endif %}>Out for Delivery</option>
-                        <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
-                        <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
-                    </select>
-                    <button type="submit" class="btn btn-sm btn-primary">Update</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-<a href="{{ url_for('owner.dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+<div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+    <h2 class="fw-bold mb-0">Fulfillment Queue</h2>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm mb-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead class="bg-black bg-opacity-25 pb-2">
+                    <tr>
+                        <th class="border-0 px-4 py-3 text-muted">Order ID</th>
+                        <th class="border-0 py-3 text-muted">Date & Time</th>
+                        <th class="border-0 py-3 text-muted">Customer Details</th>
+                        <th class="border-0 py-3 text-muted text-center">Order Total</th>
+                        <th class="border-0 py-3 text-muted text-center">Status</th>
+                        <th class="border-0 px-4 py-3 text-muted text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td class="px-4 py-3 font-monospace text-light fw-bold">#{{ order.id }}</td>
+                        <td class="py-3 text-muted small">{{ order.order_date.strftime('%Y-%m-%d %H:%M') if order.order_date else '' }}</td>
+                        <td class="py-3">
+                            <span class="text-light fw-bold">{{ order.customer.name }}</span><br>
+                            <span class="text-muted small"><i class="bi bi-geo-alt me-1"></i>{{ order.delivery_address }}</span>
+                        </td>
+                        <td class="py-3 text-center font-monospace text-primary fw-bold">${{ "%.2f"|format(order.total_amount) }}</td>
+                        <td class="py-3 text-center">
+                            {% if order.status == 'pending' %}
+                                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-hourglass-split me-1"></i> Pending</span>
+                            {% elif order.status == 'accepted' or order.status == 'preparing' %}
+                                <span class="badge bg-info text-dark px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-fire me-1"></i> {{ order.status|title }}</span>
+                            {% elif order.status == 'out for delivery' %}
+                                <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-truck me-1"></i> Delivering</span>
+                            {% elif order.status == 'delivered' %}
+                                <span class="badge bg-success px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-check-circle me-1"></i> Delivered</span>
+                            {% elif order.status == 'cancelled' %}
+                                <span class="badge bg-danger px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-x-circle me-1"></i> Cancelled</span>
+                            {% else %}
+                                <span class="badge bg-secondary px-3 py-2 rounded-pill shadow-sm">{{ order.status|title }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <form method="POST" action="{{ url_for('owner.update_order', id=order.id) }}" class="d-flex justify-content-end mb-0">
+                                <div class="input-group shadow-sm" style="max-width: 250px;">
+                                    <select name="status" class="form-select form-select-sm bg-black border-secondary text-light">
+                                        <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                                        <option value="accepted" {% if order.status == 'accepted' %}selected{% endif %}>Accepted</option>
+                                        <option value="preparing" {% if order.status == 'preparing' %}selected{% endif %}>Preparing</option>
+                                        <option value="out for delivery" {% if order.status == 'out for delivery' %}selected{% endif %}>Out for Delivery</option>
+                                        <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                                        <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary fw-bold">Update</button>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <i class="bi bi-receipt text-muted fs-1 d-block mb-3"></i>
+                            <p class="text-muted mb-0">No orders in the queue.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<a href="{{ url_for('owner.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4"><i class="bi bi-arrow-left me-1"></i> Back to Dashboard</a>
 {% endblock %}

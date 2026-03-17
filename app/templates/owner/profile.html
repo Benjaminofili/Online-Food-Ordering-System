@@ -1,34 +1,53 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Restaurant Profile</h2>
-<form method="POST" action="{{ url_for('owner.profile') }}" enctype="multipart/form-data">
-    <div class="mb-3">
-        <label class="form-label">Restaurant Name</label>
-        <input type="text" name="name" class="form-control" value="{{ restaurant.name if restaurant else '' }}" required>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Address</label>
-        <textarea name="address" class="form-control" required>{{ restaurant.address if restaurant else '' }}</textarea>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Contact Number</label>
-        <input type="text" name="contact" class="form-control" value="{{ restaurant.contact if restaurant else '' }}">
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Description</label>
-        <textarea name="description" class="form-control">{{ restaurant.description if restaurant else '' }}</textarea>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Upload Logo (Optional)</label>
-        <input type="file" name="logo" class="form-control" accept="image/*">
-        {% if restaurant and restaurant.logo_url %}
-            <div class="mt-2">
-                <p class="mb-1 text-muted small">Current Logo:</p>
-                <img src="{{ restaurant.logo_url }}" alt="logo" height="50">
+<div class="row justify-content-center mt-4 mb-5">
+    <div class="col-lg-8">
+        <div class="card bg-dark border-secondary shadow-sm p-4">
+            <div class="d-flex align-items-center mb-4 pb-3 border-bottom border-secondary">
+                <div class="bg-primary bg-opacity-10 p-2 rounded me-3">
+                    <i class="bi bi-shop fs-4 text-primary"></i>
+                </div>
+                <h3 class="fw-bold mb-0">Restaurant Profile</h3>
             </div>
-        {% endif %}
+            
+            <form method="POST" action="{{ url_for('owner.profile') }}" enctype="multipart/form-data">
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <label class="form-label text-muted small text-uppercase fw-bold">Restaurant Name</label>
+                        <input type="text" name="name" class="form-control form-control-lg bg-black border-secondary text-light" value="{{ restaurant.name if restaurant else '' }}" required placeholder="e.g. The Midnight Bistro">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small text-uppercase fw-bold">Contact Number</label>
+                        <input type="text" name="contact" class="form-control form-control-lg bg-black border-secondary text-light" value="{{ restaurant.contact if restaurant else '' }}" placeholder="(555) 123-4567">
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Address</label>
+                    <textarea name="address" class="form-control bg-black border-secondary text-light" rows="2" required placeholder="Full physical address...">{{ restaurant.address if restaurant else '' }}</textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Description</label>
+                    <textarea name="description" class="form-control bg-black border-secondary text-light" rows="3" placeholder="Tell customers about your culinary philosophy and offerings...">{{ restaurant.description if restaurant else '' }}</textarea>
+                </div>
+                <div class="mb-5 p-3 bg-black bg-opacity-25 rounded border border-secondary">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Upload Logo (Optional)</label>
+                    <input type="file" name="logo" class="form-control bg-dark border-secondary text-light mb-3" accept="image/*">
+                    {% if restaurant and restaurant.logo_url %}
+                        <div class="d-flex align-items-center bg-black bg-opacity-50 p-2 rounded border border-secondary d-inline-block">
+                            <img src="{{ restaurant.logo_url }}" alt="logo" class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                            <span class="small text-muted">Current branding active</span>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex justify-content-end gap-3 pt-3 border-top border-secondary">
+                    <a href="{{ url_for('owner.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 shadow-sm fw-bold"><i class="bi bi-check2-circle me-1"></i> Save Profile</button>
+                </div>
+            </form>
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary">Save Profile</button>
-    <a href="{{ url_for('owner.dashboard') }}" class="btn btn-secondary">Cancel</a>
-</form>
+</div>
 {% endblock %}

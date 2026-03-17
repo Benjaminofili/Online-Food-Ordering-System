@@ -1,58 +1,80 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>{{ 'Edit' if dish else 'Add' }} Dish</h2>
-<form method="POST" enctype="multipart/form-data">
-    <div class="mb-3">
-        <label class="form-label">Dish Name</label>
-        <input type="text" name="name" class="form-control" value="{{ dish.name if dish else '' }}" required>
-    </div>
-    
-    <div class="row mb-3">
-        <div class="col">
-            <label class="form-label">Category</label>
-            <select name="category_id" class="form-select">
-                {% for cat in categories %}
-                    <option value="{{ cat.id }}" {% if dish and dish.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col">
-            <label class="form-label">Food Type</label>
-            <select name="food_type_id" class="form-select">
-                {% for ft in food_types %}
-                    <option value="{{ ft.id }}" {% if dish and dish.food_type_id == ft.id %}selected{% endif %}>{{ ft.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-    </div>
-    
-    <div class="mb-3">
-        <label class="form-label">Price</label>
-        <input type="number" step="0.01" name="price" class="form-control" value="{{ dish.price if dish else '' }}" required>
-    </div>
-    
-    <div class="mb-3">
-        <label class="form-label">Description</label>
-        <textarea name="description" class="form-control">{{ dish.description if dish else '' }}</textarea>
-    </div>
-    
-    <div class="mb-3">
-        <label class="form-label">Upload Dish Image (Optional)</label>
-        <input type="file" name="image" class="form-control" accept="image/*">
-        {% if dish and dish.image_url %}
-            <div class="mt-2">
-                <p class="mb-1 text-muted small">Current Image:</p>
-                <img src="{{ dish.image_url }}" alt="dish" height="50">
+<div class="row justify-content-center mt-4 mb-5">
+    <div class="col-md-8">
+        <div class="card bg-dark border-secondary shadow-sm p-4">
+            <div class="d-flex align-items-center mb-4 pb-3 border-bottom border-secondary">
+                <div class="bg-primary bg-opacity-10 p-2 rounded me-3">
+                    <i class="bi {{ 'bi-pencil-square' if dish else 'bi-plus-circle' }} fs-4 text-primary"></i>
+                </div>
+                <h3 class="fw-bold mb-0">{{ 'Edit Menu Item' if dish else 'Create Menu Item' }}</h3>
             </div>
-        {% endif %}
+            
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-4">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Dish Name</label>
+                    <input type="text" name="name" class="form-control form-control-lg bg-black border-secondary text-light" value="{{ dish.name if dish else '' }}" required placeholder="e.g. Truffle Mac & Cheese">
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <label class="form-label text-muted small text-uppercase fw-bold">Menu Category</label>
+                        <select name="category_id" class="form-select bg-black border-secondary text-light">
+                            {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if dish and dish.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small text-uppercase fw-bold">Dietary Type</label>
+                        <select name="food_type_id" class="form-select bg-black border-secondary text-light">
+                            {% for ft in food_types %}
+                                <option value="{{ ft.id }}" {% if dish and dish.food_type_id == ft.id %}selected{% endif %}>{{ ft.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Price ($)</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-black border-secondary text-muted">$</span>
+                        <input type="number" step="0.01" name="price" class="form-control bg-black border-secondary text-light" value="{{ dish.price if dish else '' }}" required placeholder="0.00">
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Description</label>
+                    <textarea name="description" class="form-control bg-black border-secondary text-light" rows="3" placeholder="Describe the ingredients, presentation, and flavor profile...">{{ dish.description if dish else '' }}</textarea>
+                </div>
+                
+                <div class="mb-4 p-3 bg-black bg-opacity-25 rounded border border-secondary">
+                    <label class="form-label text-muted small text-uppercase fw-bold">Menu Image</label>
+                    <input type="file" name="image" class="form-control bg-dark border-secondary text-light mb-3" accept="image/*">
+                    {% if dish and dish.image_url %}
+                        <div class="d-flex align-items-center bg-black bg-opacity-50 p-2 rounded border border-secondary d-inline-block">
+                            <img src="{{ dish.image_url }}" alt="dish" class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                            <span class="small text-muted">Current image active</span>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-5 bg-black bg-opacity-25 p-3 rounded border border-secondary d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 fw-bold text-light">Item Visibility</h6>
+                        <p class="text-muted small mb-0">Toggle whether this item is currently available to order.</p>
+                    </div>
+                    <div class="form-check form-switch fs-4 m-0">
+                        <input type="checkbox" name="is_available" class="form-check-input" id="is_available" {% if not dish or dish.is_available %}checked{% endif %} role="switch">
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-end gap-3 pt-3 border-top border-secondary">
+                    <a href="{{ url_for('owner.dishes') }}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 shadow-sm fw-bold"><i class="bi bi-check2-circle me-1"></i> Save Changes</button>
+                </div>
+            </form>
+        </div>
     </div>
-    
-    <div class="mb-3 form-check">
-        <input type="checkbox" name="is_available" class="form-check-input" id="is_available" {% if not dish or dish.is_available %}checked{% endif %}>
-        <label class="form-check-label" for="is_available">Is Available</label>
-    </div>
-    
-    <button type="submit" class="btn btn-primary">Save Dish</button>
-    <a href="{{ url_for('owner.dishes') }}" class="btn btn-secondary">Cancel</a>
-</form>
+</div>
 {% endblock %}

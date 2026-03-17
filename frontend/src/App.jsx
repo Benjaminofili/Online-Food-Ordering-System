@@ -413,9 +413,9 @@ export default function App() {
           <div>
             <h4 className="font-mono text-accent mb-6">Platform</h4>
             <ul className="space-y-4 text-background/60">
-              <li><a href="#" className="hover:text-background transition-colors">Restaurants</a></li>
-              <li><a href="#" className="hover:text-background transition-colors">Deals</a></li>
-              <li><a href="#" className="hover:text-background transition-colors">Partner with us</a></li>
+              <li><a href="/auth/login" className="hover:text-background transition-colors">Restaurants</a></li>
+              <li><a href="/auth/login" className="hover:text-background transition-colors">Deals</a></li>
+              <li><a href="/auth/register" className="hover:text-background transition-colors">Partner with us</a></li>
             </ul>
           </div>
           <div>

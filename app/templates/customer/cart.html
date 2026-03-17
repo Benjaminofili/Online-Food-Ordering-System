@@ -1,55 +1,69 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Your Cart</h2>
+<div class="d-flex align-items-center mb-4 mt-3">
+    <h2 class="fw-bold mb-0"><i class="bi bi-cart3 me-2 text-warning"></i>Your Cart</h2>
+</div>
 {% if not cart_items %}
-    <div class="alert alert-info">Your cart is currently empty.</div>
-    <a href="{{ url_for('customer.dashboard') }}" class="btn btn-primary">Browse Restaurants</a>
-{% else %}
-    <table class="table table-striped mt-3">
-        <thead>
-            <tr>
-                <th>Dish</th>
-                <th>Price</th>
-                <th>Quantity</th>
-                <th>Subtotal</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in cart_items %}
-            <tr>
-                <td class="align-middle">{{ item.dish.name }}</td>
-                <td class="align-middle">${{ item.dish.price }}</td>
-                <td class="align-middle">
-                    <div class="d-flex align-items-center">
-                        <form method="POST" action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='decrease') }}" class="m-0">
-                            <button type="submit" class="btn btn-sm btn-outline-secondary px-2">-</button>
-                        </form>
-                        <span class="mx-2">{{ item.quantity }}</span>
-                        <form method="POST" action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='increase') }}" class="m-0">
-                            <button type="submit" class="btn btn-sm btn-outline-secondary px-2">+</button>
-                        </form>
-                    </div>
-                </td>
-                <td class="align-middle">${{ "%.2f"|format(item.subtotal) }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-        <tfoot>
-            <tr>
-                <td colspan="3" class="text-end fw-bold">Total:</td>
-                <td class="fw-bold fs-5">${{ "%.2f"|format(total) }}</td>
-            </tr>
-        </tfoot>
-    </table>
-    
-    <div class="d-flex justify-content-between mt-4">
+    <div class="alert alert-info border-info shadow-sm d-flex align-items-center p-4 rounded-3">
+        <i class="bi bi-info-circle-fill fs-3 me-3"></i>
         <div>
-            <form method="POST" action="{{ url_for('customer.clear_cart') }}" style="display:inline;">
-                <button type="submit" class="btn btn-danger">Clear Cart</button>
-            </form>
-            <a href="{{ url_for('customer.dashboard') }}" class="btn btn-secondary ms-2">Continue Shopping</a>
+            <h5 class="alert-heading mb-1 fw-bold">Your cart is currently empty.</h5>
+            <p class="mb-0">Looks like you haven't added any dishes yet.</p>
         </div>
-        <a href="{{ url_for('customer.checkout') }}" class="btn btn-success btn-lg">Proceed to Checkout</a>
+    </div>
+    <div class="mt-4">
+        <a href="{{ url_for('customer.dashboard') }}" class="btn btn-outline-primary rounded-pill px-4 py-2"><i class="bi bi-search me-1"></i> Browse Restaurants</a>
+    </div>
+{% else %}
+    <div class="card bg-dark border-secondary shadow-sm mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead class="bg-black bg-opacity-25 pb-2">
+                        <tr>
+                            <th class="border-0 px-4 py-3 text-muted">Dish Item</th>
+                            <th class="border-0 py-3 text-muted text-center" style="width: 15%">Unit Price</th>
+                            <th class="border-0 py-3 text-muted text-center" style="width: 20%">Quantity</th>
+                            <th class="border-0 px-4 py-3 text-muted text-end" style="width: 15%">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in cart_items %}
+                        <tr>
+                            <td class="px-4 py-4 fw-bold text-light">{{ item.dish.name }}</td>
+                            <td class="py-4 text-center text-light opacity-75">${{ "%.2f"|format(item.dish.price) }}</td>
+                            <td class="py-4">
+                                <div class="d-flex align-items-center justify-content-center bg-black bg-opacity-25 rounded-pill p-1 mx-auto" style="max-width: 120px;">
+                                    <form method="POST" action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='decrease') }}" class="m-0">
+                                        <button type="submit" class="btn btn-sm btn-link text-light text-decoration-none px-2 fs-5 lh-1"><i class="bi bi-dash"></i></button>
+                                    </form>
+                                    <span class="mx-3 fw-bold text-light">{{ item.quantity }}</span>
+                                    <form method="POST" action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='increase') }}" class="m-0">
+                                        <button type="submit" class="btn btn-sm btn-link text-light text-decoration-none px-2 fs-5 lh-1"><i class="bi bi-plus"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 text-end font-monospace text-primary fw-bold">${{ "%.2f"|format(item.subtotal) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="bg-black bg-opacity-50 p-4 border-top border-secondary d-flex justify-content-between align-items-center">
+                <span class="text-uppercase text-muted letter-spacing-wide fw-bold">Estimated Total</span>
+                <span class="fw-bold fs-3 text-warning">${{ "%.2f"|format(total) }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="d-flex gap-3">
+            <a href="{{ url_for('customer.dashboard') }}" class="btn btn-outline-light rounded-pill px-4"><i class="bi bi-arrow-left me-1"></i> Keep Browsing</a>
+            <form method="POST" action="{{ url_for('customer.clear_cart') }}" class="m-0">
+                <button type="submit" class="btn btn-outline-danger rounded-pill px-4"><i class="bi bi-trash3 me-1"></i> Clear Cart</button>
+            </form>
+        </div>
+        <a href="{{ url_for('customer.checkout') }}" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm">Checkout <i class="bi bi-arrow-right ms-2"></i></a>
     </div>
 {% endif %}
 {% endblock %}

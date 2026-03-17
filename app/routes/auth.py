@@ -6,10 +6,20 @@ from app.forms import LoginForm, RegistrationForm, ChangePasswordForm
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
+def _dashboard_redirect():
+    """Redirect to the correct dashboard based on user role."""
+    if current_user.role == 'customer':
+        return redirect(url_for('customer.dashboard'))
+    elif current_user.role == 'owner':
+        return redirect(url_for('owner.dashboard'))
+    elif current_user.role == 'admin':
+        return redirect(url_for('admin.dashboard'))
+    return redirect(url_for('index'))
+
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return _dashboard_redirect()
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
@@ -26,7 +36,7 @@ def login():
             elif user.role == 'admin':
                 return redirect(url_for('admin.dashboard'))
             else:
-                return redirect(url_for('index'))
+                return redirect(url_for('index'))  # fallback
         flash('Invalid email or password', 'danger')
     return render_template('auth/login.html', form=form)
 
@@ -39,7 +49,7 @@ def change_password():
             current_user.set_password(form.new_password.data)
             db.session.commit()
             flash('Your password has been updated.', 'success')
-            return redirect(url_for('index'))
+            return _dashboard_redirect()
         else:
             flash('Current password is incorrect.', 'danger')
     return render_template('auth/change_password.html', form=form)
@@ -48,12 +58,12 @@ def change_password():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('index'))
+    return redirect(url_for('auth.login'))
 
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return _dashboard_redirect()
     form = RegistrationForm()
     if form.validate_on_submit():
         user = User(
