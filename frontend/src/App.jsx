@@ -326,7 +326,7 @@ export default function App() {
       <section id="philosophy" className="relative h-[80vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0 bg-primary">
           <img 
-            src="https://images.unsplash.com/photo-1414235077428-33898f82204e?q=80&w=2070&auto=format&fit=crop" 
+            src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2070&auto=format&fit=crop" 
             alt="Philosophy Texture Customer" 
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${audience === 'customer' ? 'opacity-10' : 'opacity-0'}`}
           />

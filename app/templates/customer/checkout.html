@@ -50,8 +50,14 @@
                 
                 <div class="d-flex justify-content-between mb-2 text-muted">
                     <span>Subtotal</span>
-                    <span class="text-light">${{ "%.2f"|format(total) }}</span>
+                    <span class="text-light">${{ "%.2f"|format(original_total) }}</span>
                 </div>
+                {% if applied_coupon %}
+                <div class="d-flex justify-content-between mb-2 text-success">
+                    <span>Discount ({{ applied_coupon.code }})</span>
+                    <span>-${{ "%.2f"|format(discount_amount) }}</span>
+                </div>
+                {% endif %}
                 <div class="d-flex justify-content-between mb-4 text-muted border-bottom border-secondary pb-4">
                     <span>Standard Delivery</span>
                     <span class="text-success fw-bold">Free</span>

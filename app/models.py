@@ -32,6 +32,18 @@ class Restaurant(db.Model):
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     owner = db.relationship('User', backref='restaurants')
 
+class Coupon(db.Model):
+    __tablename__ = 'coupons'
+    id = db.Column(db.Integer, primary_key=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    code = db.Column(db.String(50), nullable=False)
+    discount_type = db.Column(db.String(20), nullable=False) # 'percent' or 'fixed'
+    discount_value = db.Column(db.Numeric(10,2), nullable=False)
+    valid_until = db.Column(db.DateTime, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    restaurant = db.relationship('Restaurant', backref='coupons')
+    __table_args__ = (db.UniqueConstraint('restaurant_id', 'code', name='unique_coupon_code_per_restaurant'),)
+
 class Category(db.Model):
     __tablename__ = 'categories'
     id = db.Column(db.Integer, primary_key=True)
@@ -69,8 +81,11 @@ class Order(db.Model):
     delivery_address = db.Column(db.Text, nullable=False)
     delivery_time = db.Column(db.DateTime)
     payment_method = db.Column(db.String(20), default='cash')
+    coupon_id = db.Column(db.Integer, db.ForeignKey('coupons.id'), nullable=True)
+    discount_amount = db.Column(db.Numeric(10,2), default=0)
     customer = db.relationship('User', foreign_keys=[customer_id], backref='orders')
     restaurant = db.relationship('Restaurant', backref='orders')
+    coupon = db.relationship('Coupon')
 
 class OrderItem(db.Model):
     __tablename__ = 'order_items'

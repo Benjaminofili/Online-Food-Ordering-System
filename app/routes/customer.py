@@ -1,7 +1,9 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, request, session
 from flask_login import login_required, current_user
 from app import db
-from app.models import Restaurant, Dish, Order, OrderItem, Review
+from app import db
+from app.models import Restaurant, Dish, Order, OrderItem, Review, Coupon
+from datetime import datetime
 
 bp = Blueprint('customer', __name__, url_prefix='/customer')
 
@@ -95,6 +97,45 @@ def update_cart(dish_id, action):
         session['cart'] = cart
         if not cart:
             session.pop('cart_restaurant_id', None)
+            
+    if request.headers.get('Accept') == 'application/json':
+        # Return updated JSON
+        total = 0.0
+        item_qty = 0
+        item_subtotal = 0.0
+        for did_str, qty in cart.items():
+            dish = Dish.query.get(int(did_str))
+            if dish:
+                total += float(dish.price) * qty
+                if str(did_str) == dish_id_str:
+                    item_qty = qty
+                    item_subtotal = float(dish.price) * qty
+        return {'success': True, 'new_qty': item_qty, 'new_subtotal': item_subtotal, 'new_total': total}
+        
+    return redirect(url_for('customer.view_cart'))
+
+@bp.route('/cart/apply_coupon', methods=['POST'])
+@customer_required
+def apply_coupon():
+    code = request.form.get('code')
+    restaurant_id = session.get('cart_restaurant_id')
+    
+    if not restaurant_id:
+        flash('Add items to your cart first.', 'warning')
+        return redirect(url_for('customer.view_cart'))
+        
+    coupon = Coupon.query.filter_by(restaurant_id=restaurant_id, code=code, is_active=True).first()
+    
+    if not coupon:
+        flash('Invalid or inactive promo code.', 'danger')
+        return redirect(url_for('customer.view_cart'))
+        
+    if coupon.valid_until and coupon.valid_until < datetime.now():
+        flash('This promo code has expired.', 'danger')
+        return redirect(url_for('customer.view_cart'))
+        
+    session['applied_coupon_id'] = coupon.id
+    flash(f'Promo code {code} applied successfully!', 'success')
     return redirect(url_for('customer.view_cart'))
 
 @bp.route('/checkout', methods=['GET', 'POST'])
@@ -109,7 +150,7 @@ def checkout():
     restaurant = Restaurant.query.get(restaurant_id)
     
     # Calculate total
-    total = 0
+    total = 0.0
     dishes_in_cart = []
     for dish_id_str, qty in cart.items():
         dish = Dish.query.get(int(dish_id_str))
@@ -121,10 +162,26 @@ def checkout():
         address = request.form.get('address') or current_user.address
         payment_method = request.form.get('payment_method')
         
+        coupon_id = session.get('applied_coupon_id')
+        discount_amount = 0.0
+        
+        if coupon_id:
+            coupon = Coupon.query.get(coupon_id)
+            if coupon and coupon.is_active and (not coupon.valid_until or coupon.valid_until >= datetime.now()):
+                if coupon.discount_type == 'percent':
+                    discount_amount = total * (float(coupon.discount_value) / 100.0)
+                else:
+                    discount_amount = float(coupon.discount_value)
+                total = max(0.0, total - discount_amount)
+            else:
+                coupon_id = None # Coupon invalid
+
         order = Order(
             customer_id=current_user.id,
             restaurant_id=restaurant_id,
             total_amount=total,
+            discount_amount=discount_amount,
+            coupon_id=coupon_id,
             status='pending',
             delivery_address=address,
             payment_method=payment_method
@@ -144,10 +201,27 @@ def checkout():
         db.session.commit()
         session.pop('cart', None)
         session.pop('cart_restaurant_id', None)
+        session.pop('applied_coupon_id', None)
         flash('Order placed successfully!', 'success')
         return redirect(url_for('customer.my_orders'))
         
-    return render_template('customer/checkout.html', total=total, restaurant=restaurant)
+    # GET Request Logic
+    coupon_id = session.get('applied_coupon_id')
+    discount_amount = 0.0
+    applied_coupon = None
+    original_total = total
+    
+    if coupon_id:
+        coupon = Coupon.query.get(coupon_id)
+        if coupon and coupon.is_active and (not coupon.valid_until or coupon.valid_until >= datetime.now()):
+            applied_coupon = coupon
+            if coupon.discount_type == 'percent':
+                discount_amount = total * (float(coupon.discount_value) / 100.0)
+            else:
+                discount_amount = float(coupon.discount_value)
+            total = max(0.0, total - discount_amount)
+            
+    return render_template('customer/checkout.html', total=total, original_total=original_total, discount_amount=discount_amount, applied_coupon=applied_coupon, restaurant=restaurant)
 
 @bp.route('/my-orders')
 @customer_required
@@ -184,3 +258,17 @@ def leave_review(id):
         return redirect(url_for('customer.restaurant', id=id))
         
     return render_template('customer/review.html', restaurant=restaurant, review=review)
+
+@bp.route('/api/my-active-orders')
+@customer_required
+def api_active_orders():
+    orders = Order.query.filter(
+        Order.customer_id == current_user.id,
+        Order.status.in_(['pending', 'accepted', 'preparing', 'out for delivery'])
+    ).all()
+    
+    return {'orders': [{
+        'id': o.id, 
+        'status': o.status,
+        'delivery_time': o.delivery_time.strftime('%I:%M %p') if o.delivery_time else None
+    } for o in orders]}

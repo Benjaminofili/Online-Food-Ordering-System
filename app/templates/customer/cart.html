@@ -34,24 +34,33 @@
                             <td class="py-4 text-center text-light opacity-75">${{ "%.2f"|format(item.dish.price) }}</td>
                             <td class="py-4">
                                 <div class="d-flex align-items-center justify-content-center bg-black bg-opacity-25 rounded-pill p-1 mx-auto" style="max-width: 120px;">
-                                    <form method="POST" action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='decrease') }}" class="m-0">
-                                        <button type="submit" class="btn btn-sm btn-link text-light text-decoration-none px-2 fs-5 lh-1"><i class="bi bi-dash"></i></button>
-                                    </form>
-                                    <span class="mx-3 fw-bold text-light">{{ item.quantity }}</span>
-                                    <form method="POST" action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='increase') }}" class="m-0">
-                                        <button type="submit" class="btn btn-sm btn-link text-light text-decoration-none px-2 fs-5 lh-1"><i class="bi bi-plus"></i></button>
-                                    </form>
+                                    <button type="button" onclick="updateCartItem({{ item.dish.id }}, 'decrease')" class="btn btn-sm btn-link text-light text-decoration-none px-2 fs-5 lh-1"><i class="bi bi-dash"></i></button>
+                                    <span id="qty-{{ item.dish.id }}" class="mx-3 fw-bold text-light">{{ item.quantity }}</span>
+                                    <button type="button" onclick="updateCartItem({{ item.dish.id }}, 'increase')" class="btn btn-sm btn-link text-light text-decoration-none px-2 fs-5 lh-1"><i class="bi bi-plus"></i></button>
                                 </div>
                             </td>
-                            <td class="px-4 py-4 text-end font-monospace text-primary fw-bold">${{ "%.2f"|format(item.subtotal) }}</td>
+                            <td id="subtotal-{{ item.dish.id }}" class="px-4 py-4 text-end font-monospace text-primary fw-bold">${{ "%.2f"|format(item.subtotal) }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <div class="bg-black bg-opacity-50 p-4 border-top border-secondary d-flex justify-content-between align-items-center">
-                <span class="text-uppercase text-muted letter-spacing-wide fw-bold">Estimated Total</span>
-                <span class="fw-bold fs-3 text-warning">${{ "%.2f"|format(total) }}</span>
+            <div class="bg-black bg-opacity-50 p-4 border-top border-secondary">
+                <div class="row align-items-center">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <form method="POST" action="{{ url_for('customer.apply_coupon') }}" class="d-flex group">
+                            <input type="text" name="code" class="form-control rounded-pill rounded-end-0 border-secondary bg-dark text-light" placeholder="Promo code" required>
+                            <button class="btn btn-outline-warning rounded-pill rounded-start-0" type="submit">Apply</button>
+                        </form>
+                        {% if session.get('applied_coupon_id') %}
+                            <small class="text-success mt-2 d-block"><i class="bi bi-tag-fill"></i> Coupon applied! Discount will be shown at checkout.</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <span class="text-uppercase text-muted letter-spacing-wide fw-bold me-3">Estimated Total</span>
+                        <span id="cart-total" class="fw-bold fs-3 text-warning">${{ "%.2f"|format(total) }}</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -66,4 +75,29 @@
         <a href="{{ url_for('customer.checkout') }}" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm">Checkout <i class="bi bi-arrow-right ms-2"></i></a>
     </div>
 {% endif %}
+
+<script>
+function updateCartItem(dishId, action) {
+    fetch(`/customer/cart/update/${dishId}/${action}`, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            if (data.new_qty === 0) {
+                // If quantity became 0, reload to remove item row
+                window.location.reload();
+            } else {
+                document.getElementById(`qty-${dishId}`).innerText = data.new_qty;
+                document.getElementById(`subtotal-${dishId}`).innerText = '$' + data.new_subtotal.toFixed(2);
+                document.getElementById('cart-total').innerText = '$' + data.new_total.toFixed(2);
+            }
+        }
+    })
+    .catch(err => console.error('Error updating cart:', err));
+}
+</script>
 {% endblock %}

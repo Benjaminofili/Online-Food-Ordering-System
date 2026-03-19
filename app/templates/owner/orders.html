@@ -7,7 +7,7 @@
 <div class="card bg-dark border-secondary shadow-sm mb-4">
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-dark table-hover align-middle mb-0">
+            <table class="table table-dark table-hover align-middle mb-0 datatable">
                 <thead class="bg-black bg-opacity-25 pb-2">
                     <tr>
                         <th class="border-0 px-4 py-3 text-muted">Order ID</th>
@@ -45,7 +45,7 @@
                         </td>
                         <td class="px-4 py-3">
                             <form method="POST" action="{{ url_for('owner.update_order', id=order.id) }}" class="d-flex justify-content-end mb-0">
-                                <div class="input-group shadow-sm" style="max-width: 250px;">
+                                <div class="d-flex flex-column gap-2 shadow-sm" style="max-width: 280px; width: 100%;">
                                     <select name="status" class="form-select form-select-sm bg-black border-secondary text-light">
                                         <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
                                         <option value="accepted" {% if order.status == 'accepted' %}selected{% endif %}>Accepted</option>
@@ -54,7 +54,17 @@
                                         <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
                                         <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
                                     </select>
-                                    <button type="submit" class="btn btn-sm btn-outline-primary fw-bold">Update</button>
+                                    <div class="input-group input-group-sm">
+                                        <select name="estimated_time" class="form-select bg-black border-secondary text-light">
+                                            <option value="">-- Est. Delivery (mins) --</option>
+                                            <option value="15">15 mins</option>
+                                            <option value="30">30 mins</option>
+                                            <option value="45">45 mins</option>
+                                            <option value="60">60 mins</option>
+                                            <option value="90">90 mins</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-outline-primary fw-bold">Update</button>
+                                    </div>
                                 </div>
                             </form>
                         </td>

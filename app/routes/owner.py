@@ -1,10 +1,32 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_login import login_required, current_user
 from app import db
-from app.models import Restaurant, Dish, Order, Category, FoodType
+from app.models import Restaurant, Dish, Order, Category, FoodType, Coupon
 from app.utils import upload_image_to_cloudinary
+from datetime import datetime
+from spellchecker import SpellChecker
 
 bp = Blueprint('owner', __name__, url_prefix='/owner')
+
+spell = SpellChecker()
+
+def check_dish_spelling(name):
+    if not name: return None
+    words = [w.strip('.,!?"\'') for w in name.split()]
+    misspelled = spell.unknown(words)
+    if not misspelled:
+        return None
+        
+    suggestions = []
+    for word in misspelled:
+        if word and not word.isdigit():
+            correction = spell.correction(word)
+            if correction and correction != word:
+                suggestions.append(f"'{word}' -> '{correction}'")
+                
+    if suggestions:
+        return f"Typo warning: Did you mean {', '.join(suggestions)}?"
+    return None
 
 def owner_required(func):
     def wrapper(*args, **kwargs):
@@ -102,7 +124,14 @@ def add_dish():
         )
         db.session.add(dish)
         db.session.commit()
-        flash('Dish added.', 'success')
+        
+        warning = check_dish_spelling(dish.name)
+        if warning:
+            flash(warning, 'warning')
+            flash('Dish added successfully, but with possible typos.', 'success')
+        else:
+            flash('Dish added successfully.', 'success')
+            
         return redirect(url_for('owner.dishes'))
         
     return render_template('owner/dish_form.html', categories=categories, food_types=food_types, dish=None)
@@ -134,7 +163,14 @@ def edit_dish(id):
         dish.is_available = request.form.get('is_available') == 'on'
         
         db.session.commit()
-        flash('Dish updated.', 'success')
+        
+        warning = check_dish_spelling(dish.name)
+        if warning:
+            flash(warning, 'warning')
+            flash('Dish updated successfully, but with possible typos.', 'success')
+        else:
+            flash('Dish updated successfully.', 'success')
+            
         return redirect(url_for('owner.dishes'))
         
     return render_template('owner/dish_form.html', categories=categories, food_types=food_types, dish=dish)
@@ -156,8 +192,9 @@ def orders():
     restaurant = get_restaurant()
     if not restaurant:
         return redirect(url_for('owner.profile'))
-    orders = Order.query.filter_by(restaurant_id=restaurant.id).order_by(Order.order_date.desc()).all()
-    return render_template('owner/orders.html', orders=orders)
+        
+    restaurant_orders = Order.query.filter_by(restaurant_id=restaurant.id).order_by(Order.order_date.desc()).all()
+    return render_template('owner/orders.html', orders=restaurant_orders)
 
 @bp.route('/orders/update/<int:id>', methods=['POST'])
 @owner_required
@@ -165,7 +202,67 @@ def update_order(id):
     restaurant = get_restaurant()
     order = Order.query.get_or_404(id)
     if order.restaurant_id == restaurant.id:
-        order.status = request.form.get('status')
+        status = request.form.get('status')
+        order.status = status
+        
+        if status in ['accepted', 'preparing']:
+            estimated_time = request.form.get('estimated_time')
+            if estimated_time and estimated_time.isdigit():
+                from datetime import timedelta
+                order.delivery_time = datetime.now() + timedelta(minutes=int(estimated_time))
+                
         db.session.commit()
         flash('Order status updated.', 'success')
     return redirect(url_for('owner.orders'))
+
+@bp.route('/coupons')
+@owner_required
+def coupons():
+    restaurant = get_restaurant()
+    if not restaurant:
+        flash('Please set up your restaurant profile first.', 'warning')
+        return redirect(url_for('owner.profile'))
+    coupons = Coupon.query.filter_by(restaurant_id=restaurant.id).all()
+    return render_template('owner/coupons.html', coupons=coupons)
+
+@bp.route('/coupons/add', methods=['POST'])
+@owner_required
+def add_coupon():
+    restaurant = get_restaurant()
+    code = request.form.get('code')
+    discount_type = request.form.get('discount_type')
+    discount_value = request.form.get('discount_value')
+    valid_until_str = request.form.get('valid_until')
+    is_active = request.form.get('is_active') == 'on'
+
+    if Coupon.query.filter_by(restaurant_id=restaurant.id, code=code).first():
+        flash('A coupon with this code already exists for your restaurant.', 'danger')
+        return redirect(url_for('owner.coupons'))
+
+    valid_until = None
+    if valid_until_str:
+        valid_until = datetime.fromisoformat(valid_until_str)
+        
+    coupon = Coupon(
+        restaurant_id=restaurant.id,
+        code=code,
+        discount_type=discount_type,
+        discount_value=discount_value,
+        valid_until=valid_until,
+        is_active=is_active
+    )
+    db.session.add(coupon)
+    db.session.commit()
+    flash('Coupon created successfully.', 'success')
+    return redirect(url_for('owner.coupons'))
+
+@bp.route('/coupons/delete/<int:id>', methods=['POST'])
+@owner_required
+def delete_coupon(id):
+    restaurant = get_restaurant()
+    coupon = Coupon.query.get_or_404(id)
+    if coupon.restaurant_id == restaurant.id:
+        db.session.delete(coupon)
+        db.session.commit()
+        flash('Coupon deleted.', 'success')
+    return redirect(url_for('owner.coupons'))
