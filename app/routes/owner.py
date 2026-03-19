@@ -1,9 +1,10 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_login import login_required, current_user
 from app import db
-from app.models import Restaurant, Dish, Order, Category, FoodType, Coupon
+from app.models import Restaurant, Dish, Order, Category, FoodType, Coupon, OrderItem
 from app.utils import upload_image_to_cloudinary
-from datetime import datetime
+from datetime import datetime, timedelta
+from sqlalchemy import func
 from spellchecker import SpellChecker
 
 bp = Blueprint('owner', __name__, url_prefix='/owner')
@@ -52,7 +53,48 @@ def dashboard():
     dishes_count = Dish.query.filter_by(restaurant_id=restaurant.id).count()
     recent_orders = Order.query.filter_by(restaurant_id=restaurant.id).order_by(Order.order_date.desc()).limit(5).all()
     
-    return render_template('owner/dashboard.html', restaurant=restaurant, dishes_count=dishes_count, recent_orders=recent_orders)
+    # Analytics Metrics
+    completed_orders = Order.query.filter(
+        Order.restaurant_id == restaurant.id,
+        Order.status != 'cancelled'
+    ).all()
+    total_revenue = sum(float(o.total_amount) for o in completed_orders)
+    
+    # 7-Day Revenue Trend
+    today = datetime.now().date()
+    dates = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6, -1, -1)]
+    revenue_by_date = {d: 0.0 for d in dates}
+    
+    for o in completed_orders:
+        if o.order_date:
+            o_date = o.order_date.strftime('%Y-%m-%d')
+            if o_date in revenue_by_date:
+                revenue_by_date[o_date] += float(o.total_amount)
+                
+    weekly_revenue_labels = list(revenue_by_date.keys())
+    weekly_revenue_data = list(revenue_by_date.values())
+    
+    # Top 5 Dishes
+    top_dishes_query = db.session.query(
+        Dish.name, func.sum(OrderItem.quantity).label('total_sold')
+    ).join(OrderItem).join(Order).filter(
+        Order.restaurant_id == restaurant.id,
+        Order.status != 'cancelled'
+    ).group_by(Dish.id).order_by(func.sum(OrderItem.quantity).desc()).limit(5).all()
+    
+    top_dishes_labels = [d[0] for d in top_dishes_query]
+    top_dishes_data = [d[1] for d in top_dishes_query]
+    
+    return render_template('owner/dashboard.html', 
+        restaurant=restaurant, 
+        dishes_count=dishes_count, 
+        recent_orders=recent_orders,
+        total_revenue=total_revenue,
+        weekly_revenue_labels=weekly_revenue_labels,
+        weekly_revenue_data=weekly_revenue_data,
+        top_dishes_labels=top_dishes_labels,
+        top_dishes_data=top_dishes_data
+    )
 
 @bp.route('/profile', methods=['GET', 'POST'])
 @owner_required
@@ -212,6 +254,10 @@ def update_order(id):
                 order.delivery_time = datetime.now() + timedelta(minutes=int(estimated_time))
                 
         db.session.commit()
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return {'success': True}
+            
         flash('Order status updated.', 'success')
     return redirect(url_for('owner.orders'))
 

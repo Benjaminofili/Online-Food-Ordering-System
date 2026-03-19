@@ -227,3 +227,4 @@ seed.py
 /tests/
 test_*.py
 .pytest_cache/
+*.txt

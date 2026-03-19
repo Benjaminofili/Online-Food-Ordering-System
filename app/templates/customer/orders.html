@@ -2,6 +2,19 @@
 {% block content %}
 <div class="d-flex align-items-center mb-4 mt-3">
     <h2 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>My Order History</h2>
+    {% set active_orders = orders|selectattr("status", "in", ["pending", "accepted", "preparing", "out for delivery"])|list %}
+    {% if active_orders %}
+    <span class="badge bg-danger ms-3 px-3 py-2 rounded-pill shadow-sm" style="animation: pulse 2s infinite;">
+        <i class="bi bi-broadcast me-1"></i> LIVE TELEMETRY
+    </span>
+    <style>
+        @keyframes pulse {
+            0% { opacity: 1; box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { opacity: 0.7; box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { opacity: 1; box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+    </style>
+    {% endif %}
 </div>
 {% if not orders %}
     <div class="alert alert-info border-info shadow-sm d-flex align-items-center p-4 rounded-3">
@@ -21,19 +34,20 @@
             <div class="card bg-dark border-secondary shadow-sm h-100 hover-elevate">
                 <div class="card-header bg-black bg-opacity-25 border-secondary py-3 d-flex justify-content-between align-items-center">
                     <span class="font-monospace text-muted fw-bold">Order #{{ order.id }}</span>
-                    {% if order.status == 'pending' %}
-                        <span class="badge bg-warning text-dark rounded-pill px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Pending</span>
-                    {% elif order.status == 'accepted' or order.status == 'preparing' %}
-                        <span class="badge bg-info text-dark rounded-pill px-2 py-1"><i class="bi bi-fire me-1"></i> {{ order.status|title }}</span>
-                    {% elif order.status == 'out for delivery' %}
-                        <span class="badge bg-primary rounded-pill px-2 py-1"><i class="bi bi-truck me-1"></i> Delivering</span>
-                    {% elif order.status == 'delivered' %}
-                        <span class="badge bg-success rounded-pill px-2 py-1"><i class="bi bi-check-circle me-1"></i> Delivered</span>
-                    {% elif order.status == 'cancelled' %}
-                        <span class="badge bg-danger rounded-pill px-2 py-1"><i class="bi bi-x-circle me-1"></i> Cancelled</span>
-                    {% else %}
-                        <span class="badge bg-secondary rounded-pill px-2 py-1">{{ order.status|title }}</span>
-                    {% endif %}
+                    <span id="order-badge-{{ order.id }}" class="badge rounded-pill px-2 py-1 
+                        {% if order.status == 'pending' %}bg-warning text-dark
+                        {% elif order.status in ['accepted', 'preparing'] %}bg-info text-dark
+                        {% elif order.status == 'out for delivery' %}bg-primary
+                        {% elif order.status == 'delivered' %}bg-success
+                        {% elif order.status == 'cancelled' %}bg-danger
+                        {% else %}bg-secondary{% endif %}">
+                        {% if order.status == 'pending' %}<i class="bi bi-hourglass-split me-1"></i> Pending
+                        {% elif order.status in ['accepted', 'preparing'] %}<i class="bi bi-fire me-1"></i> {{ order.status|title }}
+                        {% elif order.status == 'out for delivery' %}<i class="bi bi-truck me-1"></i> Delivering
+                        {% elif order.status == 'delivered' %}<i class="bi bi-check-circle me-1"></i> Delivered
+                        {% elif order.status == 'cancelled' %}<i class="bi bi-x-circle me-1"></i> Cancelled
+                        {% else %}{{ order.status|title }}{% endif %}
+                    </span>
                 </div>
                 <div class="card-body p-4 d-flex flex-column">
                     <div class="d-flex align-items-center mb-3">
@@ -43,9 +57,9 @@
                         <div>
                             <h5 class="card-title fw-bold mb-0 text-light">{{ order.restaurant.name }}</h5>
                             <p class="card-text text-muted small mb-0">{{ order.order_date.strftime('%b %d, %Y - %I:%M %p') }}</p>
-                            {% if order.delivery_time and order.status not in ['delivered', 'cancelled'] %}
-                            <p class="text-warning small mb-0 mt-1"><i class="bi bi-clock-history me-1"></i> Est. Delivery: {{ order.delivery_time.strftime('%I:%M %p') }}</p>
-                            {% endif %}
+                            <p class="text-warning small mb-0 mt-1 {% if not order.delivery_time or order.status in ['delivered', 'cancelled'] %}d-none{% endif %}" id="order-eta-{{ order.id }}">
+                                <i class="bi bi-clock-history me-1"></i> Est. Delivery: <span class="eta-time">{{ order.delivery_time.strftime('%I:%M %p') if order.delivery_time else '' }}</span>
+                            </p>
                         </div>
                     </div>
                     
@@ -63,7 +77,7 @@
                         <span class="fs-4 fw-bold text-warning">${{ "%.2f"|format(order.total_amount) }}</span>
                     </div>
                 </div>
-                <div class="card-footer bg-black bg-opacity-50 border-secondary p-3 {{ 'd-flex justify-content-end' if order.status == 'delivered' else 'd-none' }}">
+                <div id="order-footer-{{ order.id }}" class="card-footer bg-black bg-opacity-50 border-secondary p-3 {{ 'd-flex justify-content-end' if order.status == 'delivered' else 'd-none' }}">
                     {% if order.status == 'delivered' %}
                         <a href="{{ url_for('customer.leave_review', id=order.restaurant_id) }}" class="btn btn-sm btn-outline-warning rounded-pill px-4 fw-bold"><i class="bi bi-star-fill me-1"></i> Rate & Review</a>
                     {% endif %}
@@ -73,4 +87,71 @@
         {% endfor %}
     </div>
 {% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function updateOrders() {
+        fetch('{{ url_for("customer.api_active_orders") }}')
+            .then(response => response.json())
+            .then(data => {
+                data.orders.forEach(order => {
+                    const badge = document.getElementById('order-badge-' + order.id);
+                    if (badge) {
+                        let newClass = 'badge rounded-pill px-2 py-1 ';
+                        let newHtml = '';
+                        if (order.status === 'pending') {
+                            newClass += 'bg-warning text-dark';
+                            newHtml = '<i class="bi bi-hourglass-split me-1"></i> Pending';
+                        } else if (order.status === 'accepted' || order.status === 'preparing') {
+                            newClass += 'bg-info text-dark';
+                            const titleStatus = order.status.charAt(0).toUpperCase() + order.status.slice(1);
+                            newHtml = '<i class="bi bi-fire me-1"></i> ' + titleStatus;
+                        } else if (order.status === 'out for delivery') {
+                            newClass += 'bg-primary';
+                            newHtml = '<i class="bi bi-truck me-1"></i> Delivering';
+                        } else if (order.status === 'delivered') {
+                            newClass += 'bg-success';
+                            newHtml = '<i class="bi bi-check-circle me-1"></i> Delivered';
+                        } else if (order.status === 'cancelled') {
+                            newClass += 'bg-danger';
+                            newHtml = '<i class="bi bi-x-circle me-1"></i> Cancelled';
+                        } else {
+                            newClass += 'bg-secondary';
+                            newHtml = order.status.charAt(0).toUpperCase() + order.status.slice(1);
+                        }
+                        
+                        badge.className = newClass;
+                        badge.innerHTML = newHtml;
+                    }
+
+                    const etaP = document.getElementById('order-eta-' + order.id);
+                    if (etaP) {
+                        if (order.delivery_time && order.status !== 'delivered' && order.status !== 'cancelled') {
+                            etaP.classList.remove('d-none');
+                            etaP.querySelector('.eta-time').innerText = order.delivery_time;
+                        } else {
+                            etaP.classList.add('d-none');
+                        }
+                    }
+                    
+                    const footer = document.getElementById('order-footer-' + order.id);
+                    if (footer) {
+                        if (order.status === 'delivered') {
+                            footer.classList.remove('d-none');
+                            footer.classList.add('d-flex', 'justify-content-end');
+                        } else {
+                            footer.classList.add('d-none');
+                            footer.classList.remove('d-flex', 'justify-content-end');
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching order telemetry:', error));
+    }
+
+    // Only start polling if there's actually a chance of an active order, to save resources
+    // The server gives us data via Jinja but since updates can happen anytime, we poll globally
+    setInterval(updateOrders, 3000);
+});
+</script>
 {% endblock %}

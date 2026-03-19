@@ -16,11 +16,55 @@
                         <textarea name="address" class="form-control bg-black border-secondary text-light" rows="3" required placeholder="Enter your full delivery address...">{{ current_user.address }}</textarea>
                     </div>
                     <div class="mb-5">
-                        <label class="form-label text-muted small text-uppercase fw-bold">Payment Method</label>
-                        <select name="payment_method" class="form-select bg-black border-secondary text-light" required>
-                            <option value="cash">Cash on Delivery</option>
-                            <option value="card_online">Credit Card (Online)</option>
-                        </select>
+                        <label class="form-label text-muted small text-uppercase fw-bold mb-3">Payment Method</label>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="payment_method" id="pay_cash" value="cash" checked autocomplete="off">
+                                <label class="btn btn-outline-secondary w-100 py-3 text-start rounded-3" for="pay_cash">
+                                    <i class="bi bi-cash-stack fs-4 d-block mb-2 text-success"></i>
+                                    <span class="fw-bold d-block">Cash on Delivery</span>
+                                    <small class="text-muted">Pay when food arrives</small>
+                                </label>
+                            </div>
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="payment_method" id="pay_card" value="card_online" autocomplete="off">
+                                <label class="btn btn-outline-secondary w-100 py-3 text-start rounded-3" for="pay_card">
+                                    <i class="bi bi-credit-card-2-front fs-4 d-block mb-2 text-info"></i>
+                                    <span class="fw-bold d-block">Credit / Debit Card</span>
+                                    <small class="text-muted">Pay securely online</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Simulated Card Form -->
+                        <div id="card-form-container" class="d-none bg-black bg-opacity-50 p-4 rounded-3 border border-secondary shadow-sm mt-3">
+                            <h6 class="text-muted text-uppercase letter-spacing-wide mb-3 small"><i class="bi bi-lock-fill me-1 text-warning"></i> Secure Card Details</h6>
+                            <div class="mb-3">
+                                <label class="form-label small text-muted mb-1">Card Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-credit-card"></i></span>
+                                    <input type="text" class="form-control bg-dark border-secondary text-light" id="cc_number" placeholder="0000 0000 0000 0000" maxlength="19">
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <label class="form-label small text-muted mb-1">Expiry Date</label>
+                                    <input type="text" class="form-control bg-dark border-secondary text-light" id="cc_expiry" placeholder="MM/YY" maxlength="5">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small text-muted mb-1">CVC / CVV</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control bg-dark border-secondary text-light" id="cc_cvv" placeholder="123" maxlength="4">
+                                        <span class="input-group-text bg-dark border-secondary text-muted" data-bs-toggle="tooltip" title="3 digits on back of card"><i class="bi bi-question-circle"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <label class="form-label small text-muted mb-1">Cardholder Name</label>
+                                <input type="text" class="form-control bg-dark border-secondary text-light" id="cc_name" placeholder="Name on card">
+                            </div>
+                        </div>
                     </div>
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-success btn-lg py-3 rounded-pill shadow-sm fw-bold">Confirm & Place Order <i class="bi bi-check2-circle ms-2"></i></button>
@@ -43,8 +87,12 @@
                         <i class="bi bi-shop text-primary"></i>
                     </div>
                     <div>
-                        <p class="text-muted small mb-0">Fulfilling Restaurant</p>
-                        <p class="fw-bold mb-0 text-light">{{ restaurant.name }}</p>
+                        <p class="text-muted small mb-0">Fulfilling Restaurant(s)</p>
+                        <p class="fw-bold mb-0 text-light">
+                            {% for r in restaurants %}
+                                {{ r.name }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
                     </div>
                 </div>
                 
@@ -71,4 +119,57 @@
         </div>
     </div>
 </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const radioCash = document.getElementById('pay_cash');
+    const radioCard = document.getElementById('pay_card');
+    const cardForm = document.getElementById('card-form-container');
+    const ccFields = [document.getElementById('cc_number'), document.getElementById('cc_expiry'), document.getElementById('cc_cvv'), document.getElementById('cc_name')];
+    
+    function toggleCardForm() {
+        if (radioCard.checked) {
+            cardForm.classList.remove('d-none');
+            cardForm.classList.add('d-block');
+            ccFields.forEach(f => f.required = true);
+        } else {
+            cardForm.classList.add('d-none');
+            cardForm.classList.remove('d-block');
+            ccFields.forEach(f => {
+                f.required = false;
+                f.value = ''; // clear out dummy text
+            });
+        }
+    }
+    
+    radioCash.addEventListener('change', toggleCardForm);
+    radioCard.addEventListener('change', toggleCardForm);
+    
+    // Auto-format card number spaces
+    document.getElementById('cc_number').addEventListener('input', function (e) {
+        let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+        let matches = value.match(/\d{4,16}/g);
+        let match = matches && matches[0] || '';
+        let parts = [];
+        for (let i = 0, len = match.length; i < len; i += 4) {
+            parts.push(match.substring(i, i + 4));
+        }
+        if (parts.length) {
+            e.target.value = parts.join(' ');
+        } else {
+            e.target.value = value;
+        }
+    });
+
+    // Auto-format expiry slash
+    document.getElementById('cc_expiry').addEventListener('input', function (e) {
+        let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+        if (value.length >= 2) {
+            e.target.value = value.substring(0, 2) + '/' + value.substring(2, 4);
+        } else {
+            e.target.value = value;
+        }
+    });
+});
+</script>
 {% endblock %}
