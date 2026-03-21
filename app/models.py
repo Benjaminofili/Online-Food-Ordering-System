@@ -12,6 +12,7 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(20))
     address = db.Column(db.Text)
     role = db.Column(db.String(20), default='customer')
+    profile_image = db.Column(db.String(255)) # Cloudinary URL
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     def set_password(self, password):

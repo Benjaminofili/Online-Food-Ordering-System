@@ -5891,3 +5891,12 @@ footer {
 /*=======================
     DASHBOARD PAGE END
 ========================*/
+
+/* Offcanvas Nav Colors */
+.oc-link span {
+    color: var(--colorWhite);
+}
+
+.oc-link span:hover {
+    color: var(--colorPrimary);
+}

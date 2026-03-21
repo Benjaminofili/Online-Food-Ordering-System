@@ -359,5 +359,84 @@ $(function () {
         $(".navbar-toggler").toggleClass("show");
     });
 
+    // ====== DASHBOARD AJAX NAVIGATION ====== 
+    $(document).on('click', '.ajax-link', function(e) {
+        e.preventDefault();
+        var href = $(this).attr('href');
+        if (!href || href === '#' || href === 'javascript:void(0);') return;
+
+        // Update active class immediately
+        $('.dashboard_menu ul li a').removeClass('active');
+        $(this).addClass('active');
+
+        // Visual feedback
+        $('.dashboard_content').css('opacity', '0.5').css('pointer-events', 'none');
+        $('html, body').animate({ scrollTop: $('.dashboard_area').offset().top - 100 }, 300);
+
+        // Fetch new content
+        $.ajax({
+            url: href,
+            method: 'GET',
+            success: function(response) {
+                // Parse response to find the dashboard_content div
+                var parsed = $($.parseHTML(response));
+                var newContent = parsed.find('.dashboard_content').html();
+                
+                if (newContent) {
+                    $('.dashboard_content').html(newContent).css('opacity', '1').css('pointer-events', 'auto');
+                    // Re-initialize scripts needed for the new content
+                    if ($('.select_js').length) {
+                        $('.select_js').niceSelect();
+                    }
+                    
+                    // Update history
+                    history.pushState(null, '', href);
+                } else {
+                    // Fallback if structure changes
+                    window.location.href = href;
+                }
+            },
+            error: function() {
+                // Fallback
+                window.location.href = href; 
+            }
+        });
+    });
+
+    // Handle back/forward buttons for Dashboard
+    window.addEventListener('popstate', function(e) {
+        var path = window.location.pathname;
+        if (path.includes('/profile') || 
+            path.includes('/my-orders') || 
+            path.includes('/order/') ||
+            path.includes('/wishlist') ||
+            path.includes('/owner/dishes') ||
+            path.includes('/owner/orders') ||
+            path.includes('/owner/coupons') ||
+            path.includes('/change-password')) {
+            
+            $('.dashboard_content').css('opacity', '0.5').css('pointer-events', 'none');
+            $.ajax({
+                url: window.location.href,
+                method: 'GET',
+                success: function(response) {
+                    var parsed = $($.parseHTML(response));
+                    var newContent = parsed.find('.dashboard_content').html();
+                    if (newContent) {
+                        $('.dashboard_content').html(newContent).css('opacity', '1').css('pointer-events', 'auto');
+                        // update active link
+                        $('.dashboard_menu ul li a').removeClass('active');
+                        $('.dashboard_menu ul li a[href="'+path+'"]').addClass('active');
+                        if ($('.select_js').length) {
+                            $('.select_js').niceSelect();
+                        }
+                    } else {
+                        window.location.reload();
+                    }
+                },
+                error: function() { window.location.reload(); }
+            });
+        }
+    });
 
 });

@@ -395,21 +395,21 @@
             </button>
         </div>
         <nav class="oc-nav">
-            <a href="{{ url_for('customer.dashboard') }}" class="oc-link"><span>Home</span> <i class="far fa-angle-right"></i></a>
-            <a href="{{ url_for('customer.about') }}" class="oc-link"><span>About</span> <i class="far fa-angle-right"></i></a>
-            <a href="{{ url_for('customer.global_menu') }}" class="oc-link"><span>Menu</span> <i class="far fa-angle-right"></i></a>
-            <a href="{{ url_for('customer.contact') }}" class="oc-link"><span>Contact</span> <i class="far fa-angle-right"></i></a>
+            <a href="{{ url_for('customer.dashboard') }}" class="oc-link {{ 'active' if request.endpoint == 'customer.dashboard' else '' }}"><span>Home</span> <i class="far fa-angle-right"></i></a>
+            <a href="{{ url_for('customer.about') }}" class="oc-link {{ 'active' if request.endpoint == 'customer.about' else '' }}"><span>About</span> <i class="far fa-angle-right"></i></a>
+            <a href="{{ url_for('customer.global_menu') }}" class="oc-link {{ 'active' if request.endpoint == 'customer.global_menu' else '' }}"><span>Menu</span> <i class="far fa-angle-right"></i></a>
+            <a href="{{ url_for('customer.contact') }}" class="oc-link {{ 'active' if request.endpoint == 'customer.contact' else '' }}"><span>Contact</span> <i class="far fa-angle-right"></i></a>
         </nav>
         <div class="oc-divider"></div>
         <div class="oc-icons">
-            <a href="{{ url_for('customer.view_wishlist') }}" class="oc-icon-btn" title="Wishlist">
+            <a href="{{ url_for('customer.view_wishlist') }}" class="oc-icon-btn {{ 'active' if request.endpoint == 'customer.view_wishlist' else '' }}" title="Wishlist">
                 <div class="icon-wrap"><i class="fal fa-heart"></i></div> Wishlist
             </a>
-            <a href="{{ url_for('customer.view_cart') }}" class="oc-icon-btn" title="Cart">
+            <a href="{{ url_for('customer.view_cart') }}" class="oc-icon-btn {{ 'active' if request.endpoint == 'customer.view_cart' else '' }}" title="Cart">
                 <div class="icon-wrap"><i class="fas fa-shopping-basket"></i></div> Cart
             </a>
             {% if current_user.is_authenticated %}
-            <a href="{{ url_for('auth.profile') }}" class="oc-icon-btn" title="Profile">
+            <a href="{{ url_for('auth.profile') }}" class="oc-icon-btn {{ 'active' if request.endpoint in ['auth.profile', 'customer.profile', 'owner.profile', 'customer.edit_profile'] else '' }}" title="Profile">
                 <div class="icon-wrap"><i class="fas fa-user"></i></div> My Profile
             </a>
             <a href="{{ url_for('auth.logout') }}" class="oc-icon-btn oc-logout" title="Logout">
@@ -500,23 +500,29 @@
 
     /* --- Nav links --- */
     .oc-nav { display: flex; flex-direction: column; padding: 25px 30px; position: relative; z-index: 1; }
+    .oc-nav-list { display: flex; flex-direction: column; gap: 5px; }
     .oc-link {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 15px 0;
-        color: rgba(255,255,255,0.8) !important;
+        padding: 15px 12px;
+        color: #ffffff !important;
         font-size: 17px; font-weight: 600; font-family: var(--headingFont);
         text-transform: capitalize; letter-spacing: 0.5px;
         text-decoration: none !important;
-        border-bottom: 1px dashed rgba(255,255,255,0.1);
+        border-radius: 8px;
         transition: all 0.3s ease;
         position: relative;
     }
-    .oc-link::before {
-        content: ''; position: absolute; left: -15px; top: 50%; transform: translateY(-50%);
-        width: 0; height: 2px; background: var(--colorPrimary);
-        transition: all 0.3s ease; opacity: 0;
+    .oc-link:hover, .oc-link.active { 
+        color: var(--colorPrimary) !important; 
+        background: rgba(255, 124, 8, 0.08);
+        padding-left: 20px;
     }
-    .oc-link:hover { color: var(--colorWhite) !important; border-bottom-color: rgba(255,255,255,0.3); padding-left: 15px; }
+    .oc-link::before {
+        content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+        width: 4px; height: 0; background: var(--colorPrimary);
+        transition: all 0.3s ease; opacity: 0; border-radius: 0 4px 4px 0;
+    }
+    .oc-link:hover::before, .oc-link.active::before { height: 60%; opacity: 1; }
     .oc-link:hover::before { width: 20px; opacity: 1; left: -25px; }
     .oc-link i { font-size: 14px; opacity: 0; transition: all 0.3s; transform: translateX(-10px); }
     .oc-link:hover i { opacity: 1; transform: translateX(0); color: var(--colorPrimary); }
@@ -532,7 +538,7 @@
     .oc-icon-btn {
         display: flex; align-items: center; gap: 15px;
         padding: 12px 15px; border-radius: 10px;
-        color: rgba(255,255,255,0.7) !important;
+        color: rgba(255,255,255,0.85) !important;
         font-size: 15px; font-weight: 500; font-family: var(--paraFont);
         text-decoration: none !important;
         transition: all 0.3s ease;

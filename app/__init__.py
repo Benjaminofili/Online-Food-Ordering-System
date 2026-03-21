@@ -40,7 +40,14 @@ def create_app(config_class=Config):
     @app.route('/')
     def index():
         from flask import render_template
-        return render_template('index.html')
+        from app.models import Category, Dish, Review
+        categories = Category.query.all()
+        popular_dishes = Dish.query.limit(8).all()
+        active_reviews = Review.query.order_by(Review.id.desc()).limit(5).all()
+        return render_template('index.html', 
+                             categories=categories, 
+                             popular_dishes=popular_dishes,
+                             active_reviews=active_reviews)
 
     # Create tables (for development)
     with app.app_context():

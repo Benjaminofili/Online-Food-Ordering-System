@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, flash, redirect, url_for, request,
 from flask_login import login_required, current_user
 from app import db
 from app.models import Restaurant, Dish, Order, OrderItem, Review, Coupon, Category, FoodType, Wishlist
+from app.utils import upload_image_to_cloudinary
 from sqlalchemy import func
 from datetime import datetime
 
@@ -452,6 +453,15 @@ def my_orders():
     orders = Order.query.filter_by(customer_id=current_user.id).order_by(Order.order_date.desc()).all()
     return render_template('dashboard_order.html', orders=orders)
 
+@bp.route('/order/<int:id>')
+@customer_required
+def order_invoice(id):
+    order = Order.query.get_or_404(id)
+    if order.customer_id != current_user.id:
+        flash('Unauthorized access to order.', 'danger')
+        return redirect(url_for('customer.my_orders'))
+    return render_template('dashboard_order_invoice.html', order=order)
+
 @bp.route('/restaurant/<int:id>/review', methods=['GET', 'POST'])
 @customer_required
 def leave_review(id):
@@ -526,6 +536,27 @@ def testimonial():
 @customer_required
 def profile():
     return render_template('dashboard.html')
+
+@bp.route('/profile/edit', methods=['GET', 'POST'])
+@customer_required
+def edit_profile():
+    if request.method == 'POST':
+        current_user.name = request.form.get('name')
+        current_user.phone = request.form.get('phone')
+        current_user.address = request.form.get('address')
+        
+        # Handle profile image upload
+        image_file = request.files.get('profile_image')
+        if image_file and image_file.filename != '':
+            image_url = upload_image_to_cloudinary(image_file)
+            if image_url:
+                current_user.profile_image = image_url
+        
+        db.session.commit()
+        flash('Profile updated successfully.', 'success')
+        return redirect(url_for('customer.profile'))
+        
+    return render_template('dashboard_info_edit.html')
 
 
 @bp.route('/trigger-404-error')

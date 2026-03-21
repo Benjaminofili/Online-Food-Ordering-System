@@ -152,28 +152,27 @@
                             <div class="dashboard_body">
                                 <h3>invoice</h3>
                                 <div class="invoice">
-                                    <a class="go_back" href="{{ url_for('customer.my_orders') }}"><i
+                                    <a class="go_back ajax-link" href="{{ url_for('customer.my_orders') }}"><i
                                             class="fas fa-long-arrow-alt-left"></i> go back</a>
                                     <div class="track_order">
                                         <ul>
-                                            <li class="active">order pending</li>
-                                            <li>order accept</li>
-                                            <li>order process</li>
-                                            <li>on the way</li>
-                                            <li>Completed</li>
+                                            <li class="{{ 'active' if order.status == 'pending' else '' }}">order pending</li>
+                                            <li class="{{ 'active' if order.status == 'accepted' else '' }}">order accept</li>
+                                            <li class="{{ 'active' if order.status == 'preparing' else '' }}">order process</li>
+                                            <li class="{{ 'active' if order.status == 'out for delivery' else '' }}">on the way</li>
+                                            <li class="{{ 'active' if order.status == 'delivered' else '' }}">Completed</li>
                                         </ul>
                                     </div>
                                     <div class="invoice_header">
                                         <div class="header_address">
                                             <h4>invoice to</h4>
-                                            <p>7232 Broadway Suite 308, Jackson Heights, 11372, NY, United
-                                                States</p>
-                                            <p>+1347-430-9510</p>
+                                            <p>{{ order.delivery_address }}</p>
+                                            <p>{{ order.customer.phone }}</p>
                                         </div>
                                         <div class="header_address">
-                                            <p><b>invoice no: </b><span>4574</span></p>
-                                            <p><b>Order ID:</b> <span> #4789546458</span></p>
-                                            <p><b>date:</b> <span>10-11-2022</span></p>
+                                            <p><b>invoice no: </b><span>#{{ order.id }}</span></p>
+                                            <p><b>Order ID:</b> <span> #{{ order.id }}</span></p>
+                                            <p><b>date:</b> <span>{{ order.order_date.strftime('%d-%m-%Y') }}</span></p>
                                         </div>
                                     </div>
                                     <div class="invoice_body">
@@ -187,128 +186,23 @@
                                                         <th class="qnty">Quantity</th>
                                                         <th class="total">Total</th>
                                                     </tr>
+                                                    {% for item in order.items %}
                                                     <tr>
-                                                        <td class="sl_no">01</td>
+                                                        <td class="sl_no">{{ loop.index }}</td>
                                                         <td class="package">
-                                                            <p>Hyderabadi Biryani</p>
-                                                            <span class="size">small</span>
-                                                            <span class="coca_cola">coca-cola</span>
-                                                            <span class="coca_cola2">7up</span>
+                                                            <p>{{ item.dish.name }}</p>
                                                         </td>
                                                         <td class="price">
-                                                            <b>$120</b>
+                                                            <b>${{ "%.2f"|format(item.price) }}</b>
                                                         </td>
                                                         <td class="qnty">
-                                                            <b>2</b>
+                                                            <b>{{ item.quantity }}</b>
                                                         </td>
                                                         <td class="total">
-                                                            <b>$240</b>
+                                                            <b>${{ "%.2f"|format(item.price * item.quantity) }}</b>
                                                         </td>
                                                     </tr>
-                                                    <tr>
-                                                        <td class="sl_no">02</td>
-                                                        <td class="package">
-                                                            <p>Daria Shevtsova</p>
-                                                            <span class="size">medium</span>
-                                                            <span class="coca_cola">coca-cola</span>
-                                                        </td>
-                                                        <td class="price">
-                                                            <b>$120</b>
-                                                        </td>
-                                                        <td class="qnty">
-                                                            <b>2</b>
-                                                        </td>
-                                                        <td class="total">
-                                                            <b>$240</b>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="sl_no">03</td>
-                                                        <td class="package">
-                                                            <p>Hyderabadi Biryani</p>
-                                                            <span class="size">large</span>
-                                                            <span class="coca_cola2">7up</span>
-                                                        </td>
-                                                        <td class="price">
-                                                            <b>$120</b>
-                                                        </td>
-                                                        <td class="qnty">
-                                                            <b>2</b>
-                                                        </td>
-                                                        <td class="total">
-                                                            <b>$240</b>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="sl_no">04</td>
-                                                        <td class="package">
-                                                            <p>Hyderabadi Biryani</p>
-                                                            <span class="size">medium</span>
-                                                            <span class="coca_cola">coca-cola</span>
-                                                            <span class="coca_cola2">7up</span>
-                                                        </td>
-                                                        <td class="price">
-                                                            <b>$120</b>
-                                                        </td>
-                                                        <td class="qnty">
-                                                            <b>2</b>
-                                                        </td>
-                                                        <td class="total">
-                                                            <b>$240</b>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="sl_no">05</td>
-                                                        <td class="package">
-                                                            <p>Daria Shevtsova</p>
-                                                            <span class="size">large</span>
-                                                        </td>
-                                                        <td class="price">
-                                                            <b>$120</b>
-                                                        </td>
-                                                        <td class="qnty">
-                                                            <b>2</b>
-                                                        </td>
-                                                        <td class="total">
-                                                            <b>$240</b>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="sl_no">04</td>
-                                                        <td class="package">
-                                                            <p>Hyderabadi Biryani</p>
-                                                            <span class="size">medium</span>
-                                                            <span class="coca_cola">coca-cola</span>
-                                                            <span class="coca_cola2">7up</span>
-                                                        </td>
-                                                        <td class="price">
-                                                            <b>$120</b>
-                                                        </td>
-                                                        <td class="qnty">
-                                                            <b>2</b>
-                                                        </td>
-                                                        <td class="total">
-                                                            <b>$240</b>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="sl_no">04</td>
-                                                        <td class="package">
-                                                            <p>Hyderabadi Biryani</p>
-                                                            <span class="size">medium</span>
-                                                            <span class="coca_cola">coca-cola</span>
-                                                            <span class="coca_cola2">7up</span>
-                                                        </td>
-                                                        <td class="price">
-                                                            <b>$120</b>
-                                                        </td>
-                                                        <td class="qnty">
-                                                            <b>2</b>
-                                                        </td>
-                                                        <td class="total">
-                                                            <b>$240</b>
-                                                        </td>
-                                                    </tr>
+                                                    {% endfor %}
                                                 </tbody>
                                                 <tfoot>
                                                     <tr>
@@ -316,21 +210,21 @@
                                                             <b>sub total</b>
                                                         </td>
                                                         <td class="qnty">
-                                                            <b>12</b>
+                                                            <b>{{ order.items|sum(attribute='quantity') }}</b>
                                                         </td>
                                                         <td class="total">
-                                                            <b>$755</b>
+                                                            <b>${{ "%.2f"|format(order.total_amount + order.discount_amount) }}</b>
                                                         </td>
                                                     </tr>
                                                     <tr>
                                                         <td class="package coupon" colspan="3">
-                                                            <b>(-) Discount coupon</b>
+                                                            <b>(-) Discount coupon {{ '(' + order.coupon.code + ')' if order.coupon else '' }}</b>
                                                         </td>
                                                         <td class="qnty">
                                                             <b></b>
                                                         </td>
                                                         <td class="total coupon">
-                                                            <b>$0.00</b>
+                                                            <b>${{ "%.2f"|format(order.discount_amount) }}</b>
                                                         </td>
                                                     </tr>
                                                     <tr>
@@ -341,7 +235,7 @@
                                                             <b></b>
                                                         </td>
                                                         <td class="total coast">
-                                                            <b>$10.00</b>
+                                                            <b>$0.00</b>
                                                         </td>
                                                     </tr>
                                                     <tr>
@@ -352,7 +246,7 @@
                                                             <b></b>
                                                         </td>
                                                         <td class="total">
-                                                            <b>$765</b>
+                                                            <b>${{ "%.2f"|format(order.total_amount) }}</b>
                                                         </td>
                                                     </tr>
                                                 </tfoot>
@@ -502,21 +396,21 @@
             </button>
         </div>
         <nav class="oc-nav">
-            <a href="{{ url_for('customer.dashboard') }}" class="oc-link"><span>Home</span> <i class="far fa-angle-right"></i></a>
-            <a href="{{ url_for('customer.about') }}" class="oc-link"><span>About</span> <i class="far fa-angle-right"></i></a>
-            <a href="{{ url_for('customer.global_menu') }}" class="oc-link"><span>Menu</span> <i class="far fa-angle-right"></i></a>
-            <a href="{{ url_for('customer.contact') }}" class="oc-link"><span>Contact</span> <i class="far fa-angle-right"></i></a>
+            <a href="{{ url_for('customer.dashboard') }}" class="oc-link {{ 'active' if request.endpoint == 'customer.dashboard' else '' }}"><span>Home</span> <i class="far fa-angle-right"></i></a>
+            <a href="{{ url_for('customer.about') }}" class="oc-link {{ 'active' if request.endpoint == 'customer.about' else '' }}"><span>About</span> <i class="far fa-angle-right"></i></a>
+            <a href="{{ url_for('customer.global_menu') }}" class="oc-link {{ 'active' if request.endpoint == 'customer.global_menu' else '' }}"><span>Menu</span> <i class="far fa-angle-right"></i></a>
+            <a href="{{ url_for('customer.contact') }}" class="oc-link {{ 'active' if request.endpoint == 'customer.contact' else '' }}"><span>Contact</span> <i class="far fa-angle-right"></i></a>
         </nav>
         <div class="oc-divider"></div>
         <div class="oc-icons">
-            <a href="{{ url_for('customer.view_wishlist') }}" class="oc-icon-btn" title="Wishlist">
+            <a href="{{ url_for('customer.view_wishlist') }}" class="oc-icon-btn {{ 'active' if request.endpoint == 'customer.view_wishlist' else '' }}" title="Wishlist">
                 <div class="icon-wrap"><i class="fal fa-heart"></i></div> Wishlist
             </a>
-            <a href="{{ url_for('customer.view_cart') }}" class="oc-icon-btn" title="Cart">
+            <a href="{{ url_for('customer.view_cart') }}" class="oc-icon-btn {{ 'active' if request.endpoint == 'customer.view_cart' else '' }}" title="Cart">
                 <div class="icon-wrap"><i class="fas fa-shopping-basket"></i></div> Cart
             </a>
             {% if current_user.is_authenticated %}
-            <a href="{{ url_for('auth.profile') }}" class="oc-icon-btn" title="Profile">
+            <a href="{{ url_for('auth.profile') }}" class="oc-icon-btn {{ 'active' if request.endpoint in ['auth.profile', 'customer.profile', 'owner.profile', 'customer.edit_profile'] else '' }}" title="Profile">
                 <div class="icon-wrap"><i class="fas fa-user"></i></div> My Profile
             </a>
             <a href="{{ url_for('auth.logout') }}" class="oc-icon-btn oc-logout" title="Logout">
@@ -607,23 +501,29 @@
 
     /* --- Nav links --- */
     .oc-nav { display: flex; flex-direction: column; padding: 25px 30px; position: relative; z-index: 1; }
+    .oc-nav-list { display: flex; flex-direction: column; gap: 5px; }
     .oc-link {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 15px 0;
-        color: rgba(255,255,255,0.8) !important;
+        padding: 15px 12px;
+        color: #ffffff !important;
         font-size: 17px; font-weight: 600; font-family: var(--headingFont);
         text-transform: capitalize; letter-spacing: 0.5px;
         text-decoration: none !important;
-        border-bottom: 1px dashed rgba(255,255,255,0.1);
+        border-radius: 8px;
         transition: all 0.3s ease;
         position: relative;
     }
-    .oc-link::before {
-        content: ''; position: absolute; left: -15px; top: 50%; transform: translateY(-50%);
-        width: 0; height: 2px; background: var(--colorPrimary);
-        transition: all 0.3s ease; opacity: 0;
+    .oc-link:hover, .oc-link.active { 
+        color: var(--colorPrimary) !important; 
+        background: rgba(255, 124, 8, 0.08);
+        padding-left: 20px;
     }
-    .oc-link:hover { color: var(--colorWhite) !important; border-bottom-color: rgba(255,255,255,0.3); padding-left: 15px; }
+    .oc-link::before {
+        content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+        width: 4px; height: 0; background: var(--colorPrimary);
+        transition: all 0.3s ease; opacity: 0; border-radius: 0 4px 4px 0;
+    }
+    .oc-link:hover::before, .oc-link.active::before { height: 60%; opacity: 1; }
     .oc-link:hover::before { width: 20px; opacity: 1; left: -25px; }
     .oc-link i { font-size: 14px; opacity: 0; transition: all 0.3s; transform: translateX(-10px); }
     .oc-link:hover i { opacity: 1; transform: translateX(0); color: var(--colorPrimary); }
@@ -639,7 +539,7 @@
     .oc-icon-btn {
         display: flex; align-items: center; gap: 15px;
         padding: 12px 15px; border-radius: 10px;
-        color: rgba(255,255,255,0.7) !important;
+        color: rgba(255,255,255,0.85) !important;
         font-size: 15px; font-weight: 500; font-family: var(--paraFont);
         text-decoration: none !important;
         transition: all 0.3s ease;
