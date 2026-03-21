@@ -16,6 +16,15 @@ def _dashboard_redirect():
         return redirect(url_for('admin.dashboard'))
     return redirect(url_for('index'))
 
+@bp.route('/profile')
+@login_required
+def profile():
+    if current_user.role == 'customer':
+        return redirect(url_for('customer.profile'))
+    elif current_user.role == 'owner':
+        return redirect(url_for('owner.profile'))
+    return _dashboard_redirect()
+
 # ── JSON APIs for React Frontend ─────────────────────────────────────────────
 
 @bp.route('/api/auth/me', methods=['GET'])

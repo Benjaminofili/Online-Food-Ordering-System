@@ -1,0 +1,25 @@
+<div class="dashboard_menu">
+    <div class="dasboard_header">
+        <div class="dasboard_header_img">
+            <img src="{{ url_for('static', filename='regfood/images/testimonial_img_3.jpg') }}" alt="user" class="img-fluid w-100">
+            <label for="upload"><i class="far fa-camera"></i></label>
+            <input type="file" id="upload" hidden>
+        </div>
+        <h2>{{ current_user.name }}</h2>
+    </div>
+    <ul>
+        <li><a class="{{ 'active' if request.endpoint in ['customer.profile', 'owner.profile'] else '' }}" href="{{ url_for('auth.profile') }}"><span><i class="fas fa-user"></i></span> Personal Info</a></li>
+        
+        {% if current_user.role == 'customer' %}
+        <li><a class="{{ 'active' if request.endpoint == 'customer.view_wishlist' else '' }}" href="{{ url_for('customer.view_wishlist') }}"><span><i class="far fa-heart"></i></span> Wishlist</a></li>
+        <li><a class="{{ 'active' if request.endpoint == 'customer.my_orders' else '' }}" href="{{ url_for('customer.my_orders') }}"><span><i class="fas fa-bags-shopping"></i></span> Orders</a></li>
+        {% elif current_user.role == 'owner' %}
+        <li><a class="{{ 'active' if request.endpoint == 'owner.dishes' else '' }}" href="{{ url_for('owner.dishes') }}"><span><i class="fas fa-utensils"></i></span> My Dishes</a></li>
+        <li><a class="{{ 'active' if request.endpoint == 'owner.orders' else '' }}" href="{{ url_for('owner.orders') }}"><span><i class="fas fa-bags-shopping"></i></span> Orders</a></li>
+        <li><a class="{{ 'active' if request.endpoint == 'owner.coupons' else '' }}" href="{{ url_for('owner.coupons') }}"><span><i class="fas fa-ticket-alt"></i></span> Coupons</a></li>
+        {% endif %}
+
+        <li><a class="{{ 'active' if request.endpoint == 'auth.change_password' else '' }}" href="{{ url_for('auth.change_password') }}"><span><i class="fas fa-user-lock"></i></span> Change Password</a></li>
+        <li><a href="{{ url_for('auth.logout') }}"><span><i class="fas fa-sign-out-alt"></i></span> Logout</a></li>
+    </ul>
+</div>

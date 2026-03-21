@@ -522,6 +522,12 @@ def terms_condition():
 def testimonial():
     return render_template('testimonial.html')
 
+@bp.route('/profile')
+@customer_required
+def profile():
+    return render_template('dashboard.html')
+
+
 @bp.route('/trigger-404-error')
 def trigger_404():
     return render_template('404.html'), 404

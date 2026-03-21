@@ -586,7 +586,7 @@
         line-height: 60px;
         background: var(--colorWhite);
         border-top: 1px solid var(--colorPrimary);
-        margin-top: 13px !important;
+        margin-top: 12px !important;
         padding-top: 15px;
         padding-bottom: 15px;
     }
@@ -1013,7 +1013,7 @@
         line-height: 60px;
         background: var(--colorWhite);
         border-top: 1px solid var(--colorPrimary);
-        margin-top: 13px !important;
+        margin-top: 12px !important;
         padding-top: 15px;
         padding-bottom: 15px;
     }

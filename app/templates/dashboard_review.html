@@ -61,7 +61,8 @@
             <a class="navbar-brand" href="{{ url_for('customer.dashboard') }}">
                 <img src="{{ url_for('static', filename='regfood/images/logo.png') }}" alt="RegFood" class="img-fluid">
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                        <button class="oc-toggler" id="ocToggleBtn" aria-label="Open menu"><i class="far fa-bars"></i></button>
+<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <i class="far fa-bars menu_icon_bar"></i>
                 <i class="far fa-times close_icon_close"></i>
@@ -144,31 +145,7 @@
             <div class="dashboard_area">
                 <div class="row">
                     <div class="col-xl-3 col-lg-4 wow fadeInUp" data-wow-duration="1s">
-                        <div class="dashboard_menu">
-                            <div class="dasboard_header">
-                                <div class="dasboard_header_img">
-                                    <img src="{{ url_for('static', filename='regfood/images/testimonial_img_3.jpg') }}" alt="user" class="img-fluid w-100">
-                                    <label for="upload"><i class="far fa-camera"></i></label>
-                                    <input type="file" id="upload" hidden>
-                                </div>
-                                <h2>hasib ahmed</h2>
-                            </div>
-                            <ul>
-                                <li><a href="{{ url_for('auth.login') }}"><span><i class="fas fa-user"></i></span> Parsonal Info</a>
-                                </li>
-                                <li><a href="{{ url_for('owner.coupons') }}"><span><i class="fas fa-user"></i></span>address</a>
-                                </li>
-                                <li><a href="{{ url_for('customer.my_orders') }}"><span><i class="fas fa-bags-shopping"></i></span>
-                                        Order</a></li>
-                                <li><a href="{{ url_for('owner.dishes') }}"><span><i class="far fa-heart"></i></span>
-                                        wishlist</a></li>
-                                <li><a class="active" href="#"><span><i
-                                                class="fas fa-star"></i></span> Reviews</a></li>
-                                <li><a href="{{ url_for('auth.change_password') }}"><span><i
-                                                class="fas fa-user-lock"></i></span> Change Password</a></li>
-                                <li><a href="#"><span> <i class="fas fa-sign-out-alt"></i></span> Logout</a></li>
-                            </ul>
-                        </div>
+                        {% include 'partials/dashboard_menu.html' %}
                     </div>
                     <div class="col-xl-9 col-lg-8 wow fadeInUp" data-wow-duration="1s">
                         <div class="dashboard_content">
@@ -401,6 +378,215 @@
 
     <!--main/custom js-->
     <script src="{{ url_for('static', filename='regfood/js/main.js') }}"></script>
+
+
+    <!-- ===== OFFCANVAS NAV BACKDROP ===== -->
+    <div id="navBackdrop"></div>
+
+    <!-- ===== OFFCANVAS NAV PANEL ===== -->
+    <div id="navOffcanvas">
+        <div class="oc-pattern"></div>
+        <div class="oc-header">
+            <a href="{{ url_for('customer.dashboard') }}" class="oc-logo">
+                <img src="{{ url_for('static', filename='regfood/images/logo.png') }}" alt="RegFood">
+            </a>
+            <button id="navOffcanvasClose" aria-label="Close menu">
+                <i class="far fa-times"></i>
+            </button>
+        </div>
+        <nav class="oc-nav">
+            <a href="{{ url_for('customer.dashboard') }}" class="oc-link"><span>Home</span> <i class="far fa-angle-right"></i></a>
+            <a href="{{ url_for('customer.about') }}" class="oc-link"><span>About</span> <i class="far fa-angle-right"></i></a>
+            <a href="{{ url_for('customer.global_menu') }}" class="oc-link"><span>Menu</span> <i class="far fa-angle-right"></i></a>
+            <a href="{{ url_for('customer.contact') }}" class="oc-link"><span>Contact</span> <i class="far fa-angle-right"></i></a>
+        </nav>
+        <div class="oc-divider"></div>
+        <div class="oc-icons">
+            <a href="{{ url_for('customer.view_wishlist') }}" class="oc-icon-btn" title="Wishlist">
+                <div class="icon-wrap"><i class="fal fa-heart"></i></div> Wishlist
+            </a>
+            <a href="{{ url_for('customer.view_cart') }}" class="oc-icon-btn" title="Cart">
+                <div class="icon-wrap"><i class="fas fa-shopping-basket"></i></div> Cart
+            </a>
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('auth.profile') }}" class="oc-icon-btn" title="Profile">
+                <div class="icon-wrap"><i class="fas fa-user"></i></div> My Profile
+            </a>
+            <a href="{{ url_for('auth.logout') }}" class="oc-icon-btn oc-logout" title="Logout">
+                <div class="icon-wrap"><i class="fas fa-sign-out-alt"></i></div> Logout
+            </a>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="oc-icon-btn" title="Sign In">
+                <div class="icon-wrap"><i class="fas fa-user"></i></div> Sign In
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ===== OFFCANVAS STYLES ===== -->
+    <style>
+    /* --- Navbar solid background fix --- */
+    .main_menu { background: var(--colorWhite) !important; box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
+
+    /* --- Offcanvas hamburger button (mobile only) --- */
+    .oc-toggler {
+        display: none;
+        width: 42px; height: 42px;
+        border: none; border-radius: 8px;
+        background: var(--colorPrimary);
+        color: var(--colorWhite); font-size: 18px;
+        cursor: pointer; align-items: center;
+        justify-content: center; margin-right: 12px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 15px rgba(255, 124, 8, 0.4);
+    }
+    .oc-toggler:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 124, 8, 0.6); }
+
+    /* --- Backdrop --- */
+    #navBackdrop {
+        display: none; position: fixed; inset: 0;
+        background: rgba(35, 31, 64, 0.6);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 9998;
+        transition: opacity 0.3s;
+    }
+    #navBackdrop.open { display: block; }
+
+    /* --- Panel --- */
+    #navOffcanvas {
+        position: fixed; top: 0; right: -340px; bottom: 0;
+        width: 320px;
+        background: var(--colorBlack);
+        z-index: 9999;
+        padding: 0;
+        display: flex; flex-direction: column;
+        overflow-y: auto;
+        overflow-x: hidden;
+        transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: -15px 0 40px rgba(0,0,0,0.4);
+    }
+    #navOffcanvas.open { right: 0; }
+    
+    .oc-pattern {
+        position: absolute; top: -50px; right: -50px;
+        width: 250px; height: 250px;
+        background: url({{ url_for('static', filename='regfood/images/banner_img_shapes.png') }}) no-repeat center center;
+        background-size: contain;
+        opacity: 0.05;
+        animation: rotate linear 100s infinite;
+        z-index: 0; pointer-events: none;
+    }
+
+    body.oc-open { overflow: hidden; }
+
+    /* --- Offcanvas Header --- */
+    .oc-header {
+        display: flex; align-items: center;
+        justify-content: space-between;
+        padding: 25px 30px;
+        position: relative; z-index: 1;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .oc-logo img { height: 40px; filter: brightness(0) invert(1); }
+    #navOffcanvasClose {
+        background: rgba(255,124,8,0.1); border: 1px solid rgba(255,124,8,0.2);
+        width: 38px; height: 38px; border-radius: 50%;
+        color: var(--colorPrimary); font-size: 16px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.3s ease;
+    }
+    #navOffcanvasClose:hover { background: var(--colorPrimary); color: var(--colorWhite); transform: scale(1.1) rotate(90deg); }
+
+    /* --- Nav links --- */
+    .oc-nav { display: flex; flex-direction: column; padding: 25px 30px; position: relative; z-index: 1; }
+    .oc-link {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 15px 0;
+        color: rgba(255,255,255,0.8) !important;
+        font-size: 17px; font-weight: 600; font-family: var(--headingFont);
+        text-transform: capitalize; letter-spacing: 0.5px;
+        text-decoration: none !important;
+        border-bottom: 1px dashed rgba(255,255,255,0.1);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    .oc-link::before {
+        content: ''; position: absolute; left: -15px; top: 50%; transform: translateY(-50%);
+        width: 0; height: 2px; background: var(--colorPrimary);
+        transition: all 0.3s ease; opacity: 0;
+    }
+    .oc-link:hover { color: var(--colorWhite) !important; border-bottom-color: rgba(255,255,255,0.3); padding-left: 15px; }
+    .oc-link:hover::before { width: 20px; opacity: 1; left: -25px; }
+    .oc-link i { font-size: 14px; opacity: 0; transition: all 0.3s; transform: translateX(-10px); }
+    .oc-link:hover i { opacity: 1; transform: translateX(0); color: var(--colorPrimary); }
+
+    /* --- Divider --- */
+    .oc-divider {
+        height: 5px; width: 40px; border-radius: 5px; background: var(--colorPrimary);
+        margin: 10px 30px 20px; position: relative; z-index: 1;
+    }
+
+    /* --- Icon buttons --- */
+    .oc-icons { display: flex; flex-direction: column; padding: 0 30px 40px; position: relative; z-index: 1; gap: 8px; }
+    .oc-icon-btn {
+        display: flex; align-items: center; gap: 15px;
+        padding: 12px 15px; border-radius: 10px;
+        color: rgba(255,255,255,0.7) !important;
+        font-size: 15px; font-weight: 500; font-family: var(--paraFont);
+        text-decoration: none !important;
+        transition: all 0.3s ease;
+        background: transparent;
+    }
+    .icon-wrap {
+        width: 36px; height: 36px; border-radius: 50%;
+        background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.9);
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.3s ease;
+    }
+    .oc-icon-btn i { font-size: 14px; }
+    .oc-icon-btn:hover { color: var(--colorWhite) !important; background: rgba(255,255,255,0.03); transform: translateX(5px); }
+    .oc-icon-btn:hover .icon-wrap { background: var(--colorPrimary); color: var(--colorWhite); box-shadow: 0 4px 10px rgba(255, 124, 8, 0.3); }
+    
+    .oc-logout:hover .icon-wrap { background: var(--colorRed); box-shadow: 0 4px 10px rgba(235, 0, 41, 0.3); }
+
+    /* --- Responsive: show toggler, hide Bootstrap nav collapse on mobile --- */
+    @media (max-width: 991.99px) {
+        .oc-toggler { display: flex !important; }
+        .main_menu .navbar-toggler { display: none !important; }
+        .main_menu #navbarNav { display: none !important; }
+    }
+    </style>
+
+    <!-- ===== OFFCANVAS SCRIPT ===== -->
+    <script>
+    (function () {
+        var panel    = document.getElementById('navOffcanvas');
+        var backdrop = document.getElementById('navBackdrop');
+        var toggle   = document.getElementById('ocToggleBtn');
+        var closeBtn = document.getElementById('navOffcanvasClose');
+        if (!panel) return;
+
+        function open() {
+            panel.classList.add('open');
+            backdrop.classList.add('open');
+            document.body.classList.add('oc-open');
+        }
+        function close() {
+            panel.classList.remove('open');
+            backdrop.classList.remove('open');
+            document.body.classList.remove('oc-open');
+        }
+
+        if (toggle)   toggle.addEventListener('click', open);
+        if (closeBtn) closeBtn.addEventListener('click', close);
+        if (backdrop) backdrop.addEventListener('click', close);
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') close();
+        });
+    })();
+    </script>
+
 
 </body>
 
