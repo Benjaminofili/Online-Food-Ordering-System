@@ -2123,21 +2123,45 @@
         MENU DETAILS START
     =======================*/
     .menu_details_text h2 {
-        font-size: 30px;
+        font-size: 26px;
         margin-top: 25px;
     }
 
-    .details_button_area li a {
-        font-size: 13px;
-        margin-right: 5px;
+    .quentity_btn_area {
+        justify-content: flex-start;
+        gap: 15px;
+    }
+
+    .quentity_btn_area h3 {
+        margin: 5px 0 0 0;
+        font-size: 20px;
+    }
+
+    .details_button_area {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .details_button_area li {
+        width: 100%;
+        margin: 0 !important;
+    }
+
+    .details_button_area .common_btn {
+        width: 100%;
+        text-align: center;
+        padding: 12px 20px;
     }
 
     .menu_description_area .nav .nav-item {
-        width: 50%;
+        width: 100%;
     }
 
     .menu_description_area .nav .nav-item .nav-link {
-        padding: 10px 0px;
+        padding: 12px 0px;
+        font-size: 15px;
     }
 
     .menu_det_description ul li,
@@ -2146,7 +2170,7 @@
     }
 
     .related_menu h2 {
-        font-size: 25px;
+        font-size: 22px;
     }
 
     .post_review {
@@ -2155,7 +2179,8 @@
 
     .details_size .form-check label,
     .details_extra_item .form-check label {
-        max-width: 60%;
+        max-width: 100%;
+        font-size: 14px;
     }
 
     /* =====================

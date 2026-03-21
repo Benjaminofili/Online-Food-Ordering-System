@@ -100,11 +100,18 @@
                 </ul>
                 <ul class="menu_icon d-flex flex-wrap">
                     <li>
-                        <a class="cart_icon" href="{{ url_for('customer.view_cart') }}"><i class="fas fa-shopping-basket"></i>
-                            <span>0</span></a>
+                        <a href="{{ url_for('customer.view_wishlist') }}"><i class="fal fa-heart"></i></a>
                     </li>
                     <li>
+                        <a class="cart_icon" href="{{ url_for('customer.view_cart') }}"><i class="fas fa-shopping-basket"></i>
+                            <span>{{ session.get('cart', {}).values()|sum if session.get('cart') else 0 }}</span></a>
+                    </li>
+                    <li>
+                        {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('customer.dashboard') }}"><i class="fas fa-user"></i></a>
+                        {% else %}
                         <a href="{{ url_for('auth.login') }}"><i class="fas fa-user"></i></a>
+                        {% endif %}
                     </li>
                 </ul>
             </div>
@@ -144,6 +151,7 @@
             <div class="row">
                 <div class="col-lg-12 wow fadeInUp" data-wow-duration="1s">
                     <div class="cart_list">
+                        {% if cart_items %}
                         <div class="table-responsive">
                             <table>
                                 <tbody>
@@ -169,137 +177,64 @@
                                         </th>
 
                                         <th class="pro_icon">
-                                            <a class="clear_all" href="#">clear all</a>
+                                            <form action="{{ url_for('customer.clear_cart') }}" method="POST">
+                                                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                <button type="submit" class="clear_all border-0 bg-transparent" style="color:var(--colorWhite);">clear all</button>
+                                            </form>
                                         </th>
                                     </tr>
+                                    {% for item in cart_items %}
                                     <tr>
                                         <td class="pro_img">
-                                            <img src="{{ url_for('static', filename='regfood/images/menu2_img_1.jpg') }}" alt="product" class="img-fluid w-100">
+                                            <img src="{{ item.dish.image_url or url_for('static', filename='regfood/images/menu2_img_1.jpg') }}" alt="{{ item.dish.name }}" class="img-fluid w-100">
                                         </td>
 
                                         <td class="pro_name">
-                                            <a href="#">Hyderabadi Biryani</a>
-                                            <span>medium</span>
-                                            <p>coca-cola</p>
-                                            <p>7up</p>
+                                            <a href="{{ url_for('customer.dish_details', id=item.dish.id) }}">{{ item.dish.name }}</a>
+                                            {% if item.dish.category %}<span>{{ item.dish.category.name }}</span>{% endif %}
                                         </td>
 
                                         <td class="pro_status">
-                                            <h6>$180.00</h6>
+                                            <h6>${{ "%.2f"|format(item.dish.price) }}</h6>
                                         </td>
 
                                         <td class="pro_select">
                                             <div class="quentity_btn">
-                                                <button class="btn btn-danger"><i class="fal fa-minus"></i></button>
-                                                <input type="text" placeholder="1">
-                                                <button class="btn btn-success"><i class="fal fa-plus"></i></button>
+                                                <form action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='decrement') }}" method="POST" style="display:inline;">
+                                                    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                    <button type="submit" class="btn btn-danger"><i class="fal fa-minus"></i></button>
+                                                </form>
+                                                <input type="text" value="{{ item.quantity }}" readonly>
+                                                <form action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='increment') }}" method="POST" style="display:inline;">
+                                                    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                    <button type="submit" class="btn btn-success"><i class="fal fa-plus"></i></button>
+                                                </form>
                                             </div>
                                         </td>
 
                                         <td class="pro_tk">
-                                            <h6>$180,00</h6>
+                                            <h6>${{ "%.2f"|format(item.subtotal) }}</h6>
                                         </td>
 
                                         <td class="pro_icon">
-                                            <a href="#"><i class="far fa-times"></i></a>
+                                            <form action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='remove') }}" method="POST">
+                                                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                <button type="submit" class="border-0 bg-transparent text-danger"><i class="far fa-times"></i></button>
+                                            </form>
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <td class="pro_img">
-                                            <img src="{{ url_for('static', filename='regfood/images/menu2_img_2.jpg') }}" alt="product" class="img-fluid w-100">
-                                        </td>
-
-                                        <td class="pro_name">
-                                            <a href="#">Chicken Masala</a>
-                                            <span>small</span>
-                                        </td>
-                                        <td class="pro_status">
-                                            <h6>$140.00</h6>
-                                        </td>
-
-                                        <td class="pro_select">
-                                            <div class="quentity_btn">
-                                                <button class="btn btn-danger"><i class="fal fa-minus"></i></button>
-                                                <input type="text" placeholder="1">
-                                                <button class="btn btn-success"><i class="fal fa-plus"></i></button>
-                                            </div>
-                                        </td>
-
-                                        <td class="pro_tk">
-                                            <h6>$140,00</h6>
-                                        </td>
-
-                                        <td class="pro_icon">
-                                            <a href="#"><i class="far fa-times"></i></a>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="pro_img">
-                                            <img src="{{ url_for('static', filename='regfood/images/menu2_img_3.jpg') }}" alt="product" class="img-fluid w-100">
-                                        </td>
-
-                                        <td class="pro_name">
-                                            <a href="#">Daria Shevtsova</a>
-                                            <span>large</span>
-                                            <p>coca-cola</p>
-                                            <p>7up</p>
-                                        </td>
-
-
-                                        <td class="pro_status">
-                                            <h6>$220.00</h6>
-                                        </td>
-
-                                        <td class="pro_select">
-                                            <div class="quentity_btn">
-                                                <button class="btn btn-danger"><i class="fal fa-minus"></i></button>
-                                                <input type="text" placeholder="1">
-                                                <button class="btn btn-success"><i class="fal fa-plus"></i></button>
-                                            </div>
-                                        </td>
-
-                                        <td class="pro_tk">
-                                            <h6>$220,00</h6>
-                                        </td>
-
-                                        <td class="pro_icon">
-                                            <a href="#"><i class="far fa-times"></i></a>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="pro_img">
-                                            <img src="{{ url_for('static', filename='regfood/images/menu2_img_4.jpg') }}" alt="product" class="img-fluid w-100">
-                                        </td>
-
-                                        <td class="pro_name">
-                                            <a href="#">Hyderabadi Biryani</a>
-                                            <span>medium</span>
-                                            <p>7up</p>
-                                        </td>
-
-                                        <td class="pro_status">
-                                            <h6>$150.00</h6>
-                                        </td>
-
-                                        <td class="pro_select">
-                                            <div class="quentity_btn">
-                                                <button class="btn btn-danger"><i class="fal fa-minus"></i></button>
-                                                <input type="text" placeholder="1">
-                                                <button class="btn btn-success"><i class="fal fa-plus"></i></button>
-                                            </div>
-                                        </td>
-
-                                        <td class="pro_tk">
-                                            <h6>$150.00</h6>
-                                        </td>
-
-                                        <td class="pro_icon">
-                                            <a href="#"><i class="far fa-times"></i></a>
-                                        </td>
-                                    </tr>
+                                    {% endfor %}
                                 </tbody>
                             </table>
                         </div>
+                        {% else %}
+                        <div class="text-center p-5 bg-white shadow-sm rounded">
+                            <img src="{{ url_for('static', filename='regfood/images/cart_offer_img.jpg') }}" alt="Empty Cart" class="img-fluid mb-4" style="max-height: 200px; opacity: 0.8;">
+                            <h3 class="fw-bold">Your Cart is Currently Empty</h3>
+                            <p class="text-muted mb-4">You haven't added any delicious food yet. Start exploring our menu and find something you love!</p>
+                            <a href="{{ url_for('customer.global_menu') }}" class="common_btn px-5 py-3">Browse Our Menu</a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="col-lg-12 wow fadeInUp" data-wow-duration="1s">
@@ -311,19 +246,23 @@
                                 </div>
                             </div>
                             <div class="col-xl-5 col-md-6">
+                                {% if cart_items %}
                                 <div class="cart_list_footer_button_text">
-                                    <h6>total cart (02)</h6>
-                                    <p>subtotal: <span>$124.00</span></p>
-                                    <p>delivery: <span>$00.00</span></p>
-                                    <p>discount: <span>$10.00</span></p>
-                                    <p class="total"><span>total:</span> <span>$134.00</span></p>
-                                    <form method="POST" action="">
-                            {{ form.csrf_token if form is defined else "" }}
-                                        <input type="text" placeholder="Coupon Code">
+                                    <h6>total cart ({{ cart_items|length }})</h6>
+                                    <p>subtotal: <span>${{ "%.2f"|format(total) }}</span></p>
+                                    <p>delivery: <span>$0.00</span></p>
+                                    {% if discount_amount > 0 %}
+                                    <p>discount: <span>-${{ "%.2f"|format(discount_amount) }}</span></p>
+                                    {% endif %}
+                                    <p class="total"><span>total:</span> <span>${{ "%.2f"|format(final_total) }}</span></p>
+                                    <form method="POST" action="{{ url_for('customer.apply_coupon') }}">
+                                        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                        <input type="text" name="coupon_code" placeholder="Coupon Code" value="{{ applied_coupon.code if applied_coupon else '' }}">
                                         <button type="submit">apply</button>
                                     </form>
                                     <a class="common_btn" href="{{ url_for('customer.checkout') }}">checkout</a>
                                 </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

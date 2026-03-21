@@ -107,6 +107,14 @@ class Review(db.Model):
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     customer = db.relationship('User', foreign_keys=[customer_id], backref='reviews')
     __table_args__ = (db.UniqueConstraint('customer_id', 'restaurant_id', name='unique_customer_restaurant'),)
+class Wishlist(db.Model):
+    __tablename__ = 'wishlists'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    dish_id = db.Column(db.Integer, db.ForeignKey('dishes.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    user = db.relationship('User', backref='wishlists')
+    dish = db.relationship('Dish', backref='wishlisted_by')
 
 
 @login_manager.user_loader

@@ -100,11 +100,18 @@
                 </ul>
                 <ul class="menu_icon d-flex flex-wrap">
                     <li>
-                        <a class="cart_icon" href="{{ url_for('customer.view_cart') }}"><i class="fas fa-shopping-basket"></i>
-                            <span>0</span></a>
+                        <a href="{{ url_for('customer.view_wishlist') }}"><i class="fal fa-heart"></i></a>
                     </li>
                     <li>
+                        <a class="cart_icon" href="{{ url_for('customer.view_cart') }}"><i class="fas fa-shopping-basket"></i>
+                            <span id="cart_count">{{ session.get('cart', {}).values()|sum if session.get('cart') else 0 }}</span></a>
+                    </li>
+                    <li>
+                        {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('customer.dashboard') }}"><i class="fas fa-user"></i></a>
+                        {% else %}
                         <a href="{{ url_for('auth.login') }}"><i class="fas fa-user"></i></a>
+                        {% endif %}
                     </li>
                 </ul>
             </div>
@@ -141,44 +148,53 @@
     ==============================-->
     <section class="menu_page mt_100 xs_mt_70 mb_100 xs_mb_70">
         <div class="container">
-            <form class="menu_search_area" method="GET" action="{{ url_for('customer.global_menu') }}">
-                <div class="row">
-                    <div class="col-lg-4 col-md-5">
-                        <div class="menu_search">
-                            <input type="text" name="q" placeholder="Search dishes..." value="{{ query or '' }}">
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-md-4">
-                        <div class="menu_search">
-                            <div class="select_area">
-                                <select class="select_js" name="category_id">
-                                    <option value="">All Categories</option>
-                                    {% for cat in categories %}
-                                    <option value="{{ cat.id }}" {% if selected_category == cat.id %}selected{% endif %}>{{ cat.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-md-4">
-                        <div class="menu_search">
-                            <div class="select_area">
-                                <select class="select_js" name="food_type_id">
-                                    <option value="">All Food Types</option>
-                                    {% for type in food_types %}
-                                    <option value="{{ type.id }}" {% if selected_food_type == type.id %}selected{% endif %}>{{ type.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-2 col-md-3">
-                        <div class="menu_search">
-                            <button class="common_btn" type="submit">Search</button>
-                        </div>
-                    </div>
+            <form id="searchForm" class="menu_search_area" method="GET" action="{{ url_for('customer.global_menu') }}">
+    <div class="row">
+        <div class="col-lg-4 col-md-5">
+            <div class="menu_search">
+                <input type="text" name="q" placeholder="Search dishes..." value="{{ query or '' }}" oninput="submitForm()">
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-4">
+            <div class="menu_search">
+                <div class="select_area">
+                    <select class="select_js" name="category_id" onchange="submitForm()">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if selected_category == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-            </form>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-4">
+            <div class="menu_search">
+                <div class="select_area">
+                    <select class="select_js" name="food_type_id" onchange="submitForm()">
+                        <option value="">All Food Types</option>
+                        {% for type in food_types %}
+                        <option value="{{ type.id }}" {% if selected_food_type == type.id %}selected{% endif %}>{{ type.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-3">
+            <div class="menu_search">
+                <button class="common_btn" type="submit">Search</button>
+            </div>
+        </div>
+    </div>
+</form>
+<script>
+function submitForm() {
+    // Debounce to avoid excessive submissions
+    clearTimeout(window.submitTimer);
+    window.submitTimer = setTimeout(function(){
+        document.getElementById('searchForm').submit();
+    }, 300);
+}
+</script>
 
             <div class="row">
                 {% if dishes.items %}
@@ -186,30 +202,35 @@
                     <div class="col-xl-3 col-sm-6 col-lg-4 wow fadeInUp" data-wow-duration="1s">
                         <div class="menu_item">
                             <div class="menu_item_img">
-                                <img src="{{ dish.image_url or url_for('static', filename='regfood/images/menu2_img_1.jpg') }}" alt="{{ dish.name }}" class="img-fluid w-100" style="height: 250px; object-fit: cover;">
+                                <img src="{{ dish.image_url or url_for('static', filename='regfood/images/menu2_img_1.jpg') }}" alt="{{ dish.name }}" class="img-fluid w-100">
                             </div>
                             <div class="menu_item_text">
                                 {% if dish.category %}
                                 <a class="category" href="#">{{ dish.category.name }}</a>
                                 {% endif %}
-                                <a class="title" href="{{ url_for('customer.restaurant', id=dish.restaurant_id) }}">{{ dish.name }}</a>
+                                <a class="title" href="{{ url_for('customer.dish_details', id=dish.id) }}">{{ dish.name }}</a>
                                 <p class="rating">
                                     <i class="fas fa-star"></i>
                                     <i class="fas fa-star"></i>
                                     <i class="fas fa-star"></i>
                                     <i class="fas fa-star"></i>
-                                    <i class="far fa-star"></i>
-                                    <span class="ms-1" style="color: #6c757d; font-size: 14px;"><i class="fas fa-store"></i> {{ dish.restaurant.name }}</span>
+                                    <i class="fas fa-star-half-alt"></i>
+                                    <span>20</span>
                                 </p>
                                 <h5 class="price">${{ "%.2f"|format(dish.price) }}</h5>
-                                <form action="{{ url_for('customer.add_to_cart', dish_id=dish.id) }}" method="POST" class="mt-3">
+                                <form action="{{ url_for('customer.add_to_cart', dish_id=dish.id) }}" method="POST" style="display:inline;">
                                     {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>{% endif %}
-                                    <button class="add_to_cart border-0" type="submit" style="cursor: pointer;">add to cart</button>
-                                    <ul class="d-flex flex-wrap justify-content-end" style="float: right;">
-                                        <li><a href="#"><i class="fal fa-heart"></i></a></li>
-                                        <li><a href="#"><i class="far fa-eye"></i></a></li>
-                                    </ul>
+                                    <button type="submit" class="add_to_cart border-0">add to cart</button>
                                 </form>
+                                <ul class="d-flex flex-wrap justify-content-end">
+                                    <li>
+                                        <form action="{{ url_for('customer.add_to_wishlist', dish_id=dish.id) }}" method="POST" style="display:inline;">
+                                            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                            <button type="submit" title="Add to Wishlist" class="border-0 bg-transparent" style="width:100%; height:100%; color:inherit;"><i class="fal fa-heart"></i></button>
+                                        </form>
+                                    </li>
+                                    <li><a href="{{ url_for('customer.dish_details', id=dish.id) }}"><i class="far fa-eye"></i></a></li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -459,6 +480,64 @@
 
     <!--main/custom js-->
     <script src="{{ url_for('static', filename='regfood/js/main.js') }}"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Handle AJAX Add to Cart
+            $(document).on('submit', 'form[action*="/cart/add/"]', function(e) {
+                e.preventDefault();
+                var form = $(this);
+                var url = form.attr('action');
+                var formData = form.serialize();
+
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    data: formData,
+                    headers: { 'Accept': 'application/json' },
+                    success: function(response) {
+                        if (response.success) {
+                            // Update cart count
+                            $('#cart_count').text(response.count);
+                            
+                            // Show success message
+                            var toast = $('<div class="alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3 shadow" style="z-index: 1050;">' + response.message + '</div>');
+                            $('body').append(toast);
+                            setTimeout(function() { toast.fadeOut(function() { $(this).remove(); }); }, 3000);
+                        }
+                    },
+                    error: function() {
+                        alert('Something went wrong. Please try again.');
+                    }
+                });
+            });
+
+            // Handle AJAX Add to Wishlist
+            $(document).on('submit', 'form[action*="/wishlist/add/"]', function(e) {
+                e.preventDefault();
+                var form = $(this);
+                var url = form.attr('action');
+                var formData = form.serialize();
+
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    data: formData,
+                    headers: { 'Accept': 'application/json' },
+                    success: function(response) {
+                        if (response.success) {
+                            var toast = $('<div class="alert alert-info position-fixed top-0 start-50 translate-middle-x mt-3 shadow" style="z-index: 1050;">' + response.message + '</div>');
+                            $('body').append(toast);
+                            setTimeout(function() { toast.fadeOut(function() { $(this).remove(); }); }, 3000);
+                        }
+                    },
+                    error: function() {
+                        alert('Something went wrong. Please try again.');
+                    }
+                });
+            });
+        });
+    </script>
 
 </body>
 

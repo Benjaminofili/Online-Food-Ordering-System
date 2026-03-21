@@ -1451,7 +1451,8 @@ button {
     border-right: 13px solid #000000;
 }
 
-.menu_item_text ul li a {
+.menu_item_text ul li a,
+.menu_item_text ul li button {
     width: 35px;
     height: 35px;
     line-height: 35px;
@@ -1481,7 +1482,8 @@ button {
     color: var(--colorPrimary);
 }
 
-.menu_item_text ul li a:hover {
+.menu_item_text ul li a:hover,
+.menu_item_text ul li button:hover {
     background: var(--colorPrimary);
     color: var(--colorWhite);
 }
