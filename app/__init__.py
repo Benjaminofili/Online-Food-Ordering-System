@@ -36,18 +36,11 @@ def create_app(config_class=Config):
     app.register_blueprint(owner.bp)
     app.register_blueprint(admin.bp)
 
-    # --- ADD THIS HOME ROUTE (SERVES REACT BUILD) ---
-    from flask import send_from_directory
-    import os
-    
+    # --- HOME ROUTE ---
     @app.route('/')
     def index():
-        return send_from_directory(os.path.join(app.root_path, 'static', 'react'), 'index.html')
-
-    @app.route('/assets/<path:path>')
-    def serve_react_assets(path):
-        return send_from_directory(os.path.join(app.root_path, 'static', 'react', 'assets'), path)
-    # ---------------------------
+        from flask import render_template
+        return render_template('index.html')
 
     # Create tables (for development)
     with app.app_context():

@@ -228,3 +228,5 @@ seed.py
 test_*.py
 .pytest_cache/
 *.txt
+
+inspiration/*

@@ -85,7 +85,7 @@ def dashboard():
     top_dishes_labels = [d[0] for d in top_dishes_query]
     top_dishes_data = [d[1] for d in top_dishes_query]
     
-    return render_template('owner/dashboard.html', 
+    return render_template('dashboard.html', 
         restaurant=restaurant, 
         dishes_count=dishes_count, 
         recent_orders=recent_orders,
@@ -127,7 +127,7 @@ def profile():
         flash('Restaurant profile updated.', 'success')
         return redirect(url_for('owner.dashboard'))
         
-    return render_template('owner/profile.html', restaurant=restaurant)
+    return render_template('dashboard_info_edit.html', restaurant=restaurant)
 
 @bp.route('/dishes')
 @owner_required
@@ -136,7 +136,7 @@ def dishes():
     if not restaurant:
         return redirect(url_for('owner.profile'))
     dishes = Dish.query.filter_by(restaurant_id=restaurant.id).all()
-    return render_template('owner/dishes.html', dishes=dishes)
+    return render_template('dashboard_wishlist.html', dishes=dishes)
 
 @bp.route('/dishes/add', methods=['GET', 'POST'])
 @owner_required
@@ -176,7 +176,7 @@ def add_dish():
             
         return redirect(url_for('owner.dishes'))
         
-    return render_template('owner/dish_form.html', categories=categories, food_types=food_types, dish=None)
+    return render_template('dashboard_address_edit.html', categories=categories, food_types=food_types, dish=None)
 
 @bp.route('/dishes/edit/<int:id>', methods=['GET', 'POST'])
 @owner_required
@@ -215,7 +215,7 @@ def edit_dish(id):
             
         return redirect(url_for('owner.dishes'))
         
-    return render_template('owner/dish_form.html', categories=categories, food_types=food_types, dish=dish)
+    return render_template('dashboard_address_edit.html', categories=categories, food_types=food_types, dish=dish)
 
 @bp.route('/dishes/delete/<int:id>', methods=['POST'])
 @owner_required
@@ -234,9 +234,13 @@ def orders():
     restaurant = get_restaurant()
     if not restaurant:
         return redirect(url_for('owner.profile'))
-        
-    restaurant_orders = Order.query.filter_by(restaurant_id=restaurant.id).order_by(Order.order_date.desc()).all()
-    return render_template('owner/orders.html', orders=restaurant_orders)
+    
+    status_filter = request.args.get('status')
+    query = Order.query.filter_by(restaurant_id=restaurant.id)
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    restaurant_orders = query.order_by(Order.order_date.desc()).all()
+    return render_template('dashboard_order.html', orders=restaurant_orders)
 
 @bp.route('/orders/update/<int:id>', methods=['POST'])
 @owner_required
@@ -269,7 +273,7 @@ def coupons():
         flash('Please set up your restaurant profile first.', 'warning')
         return redirect(url_for('owner.profile'))
     coupons = Coupon.query.filter_by(restaurant_id=restaurant.id).all()
-    return render_template('owner/coupons.html', coupons=coupons)
+    return render_template('dashboard_address.html', coupons=coupons)
 
 @bp.route('/coupons/add', methods=['POST'])
 @owner_required

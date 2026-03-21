@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, flash, redirect, url_for, request, session
+from flask import Blueprint, render_template, flash, redirect, url_for, request, session, jsonify
 from flask_login import login_required, current_user
 from app import db
 from app.models import Restaurant, Dish, Order, OrderItem, Review, Coupon, Category, FoodType
@@ -6,6 +6,77 @@ from sqlalchemy import func
 from datetime import datetime
 
 bp = Blueprint('customer', __name__, url_prefix='/customer')
+
+# ── Public JSON API (no auth required) ──────────────────────────────────────
+
+@bp.route('/api/restaurants/search')
+def api_search_restaurants():
+    """Public search API used by the React discovery page."""
+    q            = request.args.get('q', '').strip()
+    category_id  = request.args.get('category_id', type=int)
+    food_type_id = request.args.get('food_type_id', type=int)
+    page         = request.args.get('page', 1, type=int)
+    per_page     = 12
+
+    rest_query = Restaurant.query
+
+    # Dish-level filters need a join
+    if category_id or food_type_id or q:
+        if category_id or food_type_id:
+            rest_query = rest_query.join(Dish, Dish.restaurant_id == Restaurant.id)
+            if category_id:
+                rest_query = rest_query.filter(Dish.category_id == category_id)
+            if food_type_id:
+                rest_query = rest_query.filter(Dish.food_type_id == food_type_id)
+
+        if q:
+            dish_match = rest_query.filter(Dish.name.ilike(f'%{q}%'))
+            name_match = Restaurant.query.filter(
+                Restaurant.name.ilike(f'%{q}%') |
+                Restaurant.address.ilike(f'%{q}%')
+            )
+            from sqlalchemy import union
+            matched_ids = [r.id for r in dish_match.distinct().all()] + \
+                          [r.id for r in name_match.all()]
+            matched_ids = list(set(matched_ids))
+            rest_query = Restaurant.query.filter(Restaurant.id.in_(matched_ids))
+
+    rest_query = rest_query.distinct()
+    paginated  = rest_query.paginate(page=page, per_page=per_page, error_out=False)
+
+    results = []
+    for r in paginated.items:
+        reviews  = Review.query.filter_by(restaurant_id=r.id).all()
+        avg      = round(sum(rv.rating for rv in reviews) / len(reviews), 1) if reviews else None
+        num_dish = Dish.query.filter_by(restaurant_id=r.id, is_available=True).count()
+        results.append({
+            'id':          r.id,
+            'name':        r.name,
+            'address':     r.address,
+            'description': r.description,
+            'logo_url':    r.logo_url,
+            'avg_rating':  avg,
+            'review_count': len(reviews),
+            'dish_count':  num_dish,
+        })
+
+    return jsonify({
+        'restaurants': results,
+        'total':       paginated.total,
+        'pages':       paginated.pages,
+        'page':        page,
+        'has_next':    paginated.has_next,
+    })
+
+
+@bp.route('/api/restaurants/meta')
+def api_restaurant_meta():
+    """Return categories and food types for filter dropdowns."""
+    categories  = [{'id': c.id, 'name': c.name} for c in Category.query.order_by(Category.name).all()]
+    food_types  = [{'id': f.id, 'name': f.name} for f in FoodType.query.order_by(FoodType.name).all()]
+    return jsonify({'categories': categories, 'food_types': food_types})
+
+# ── End Public API ───────────────────────────────────────────────────────────
 
 def customer_required(func):
     def wrapper(*args, **kwargs):
@@ -52,7 +123,7 @@ def dashboard():
     food_types = FoodType.query.all()
 
     return render_template(
-        'customer/dashboard.html', 
+        'index.html', 
         restaurants=restaurants, 
         query=query,
         categories=categories,
@@ -69,7 +140,18 @@ def restaurant(id):
     dishes = Dish.query.filter_by(restaurant_id=restaurant.id, is_available=True).all()
     reviews = Review.query.filter_by(restaurant_id=restaurant.id).order_by(Review.created_at.desc()).all()
     avg_rating = sum(r.rating for r in reviews) / len(reviews) if reviews else 0
-    return render_template('customer/restaurant.html', restaurant=restaurant, dishes=dishes, reviews=reviews, avg_rating=avg_rating)
+    
+    cart = session.get('cart', {})
+    cart_items = []
+    cart_total = 0.0
+    for dish_id_str, qty in cart.items():
+        cart_dish = Dish.query.get(int(dish_id_str))
+        if cart_dish:
+            sub = float(cart_dish.price) * qty
+            cart_total += sub
+            cart_items.append({'dish': cart_dish, 'quantity': qty, 'subtotal': sub})
+            
+    return render_template('menu_details.html', restaurant=restaurant, dishes=dishes, reviews=reviews, avg_rating=avg_rating, cart_items=cart_items, cart_total=cart_total)
 
 @bp.route('/cart')
 @customer_required
@@ -83,7 +165,7 @@ def view_cart():
             subtotal = float(dish.price) * qty
             total += subtotal
             cart_items.append({'dish': dish, 'quantity': qty, 'subtotal': subtotal})
-    return render_template('customer/cart.html', cart_items=cart_items, total=total)
+    return render_template('cart_view.html', cart_items=cart_items, total=total)
 
 @bp.route('/cart/add/<int:dish_id>', methods=['POST'])
 @customer_required
@@ -251,13 +333,13 @@ def checkout():
         return redirect(url_for('customer.my_orders'))
         
     cart_restaurants = [Restaurant.query.get(rid) for rid in orders_data.keys()]
-    return render_template('customer/checkout.html', total=final_total, original_total=total, discount_amount=discount_amount, applied_coupon=applied_coupon, restaurants=cart_restaurants)
+    return render_template('check_out.html', total=final_total, original_total=total, discount_amount=discount_amount, applied_coupon=applied_coupon, restaurants=cart_restaurants)
 
 @bp.route('/my-orders')
 @customer_required
 def my_orders():
     orders = Order.query.filter_by(customer_id=current_user.id).order_by(Order.order_date.desc()).all()
-    return render_template('customer/orders.html', orders=orders)
+    return render_template('dashboard_order.html', orders=orders)
 
 @bp.route('/restaurant/<int:id>/review', methods=['GET', 'POST'])
 @customer_required
@@ -287,7 +369,7 @@ def leave_review(id):
         db.session.commit()
         return redirect(url_for('customer.restaurant', id=id))
         
-    return render_template('customer/review.html', restaurant=restaurant, review=review)
+    return render_template('dashboard_review.html', restaurant=restaurant, review=review)
 
 @bp.route('/api/my-active-orders')
 @customer_required

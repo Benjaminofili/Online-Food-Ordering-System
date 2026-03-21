@@ -51,7 +51,7 @@ def dashboard():
     top_rests_labels = [r[0] for r in top_rests_query]
     top_rests_data = [float(r[1]) for r in top_rests_query]
 
-    return render_template('admin/dashboard.html', 
+    return render_template('dashboard.html', 
                            users_count=users_count, 
                            restaurants_count=restaurants_count, 
                            orders_count=orders_count,
@@ -73,7 +73,7 @@ def categories():
             flash('Category added.', 'success')
         return redirect(url_for('admin.categories'))
     categories = Category.query.all()
-    return render_template('admin/categories.html', categories=categories)
+    return render_template('dashboard_wishlist.html', categories=categories)
 
 @bp.route('/categories/delete/<int:id>', methods=['POST'])
 @admin_required
@@ -96,7 +96,7 @@ def food_types():
             flash('Food Type added.', 'success')
         return redirect(url_for('admin.food_types'))
     food_types = FoodType.query.all()
-    return render_template('admin/food_types.html', food_types=food_types)
+    return render_template('dashboard_address.html', food_types=food_types)
 
 @bp.route('/food-types/delete/<int:id>', methods=['POST'])
 @admin_required
@@ -111,16 +111,16 @@ def delete_food_type(id):
 @admin_required
 def customers_report():
     customers = User.query.filter_by(role='customer').all()
-    return render_template('admin/customers.html', customers=customers)
+    return render_template('dashboard_review.html', customers=customers)
 
 @bp.route('/reports/restaurants')
 @admin_required
 def restaurants_report():
     restaurants = Restaurant.query.all()
-    return render_template('admin/restaurants.html', restaurants=restaurants)
+    return render_template('dashboard_address_edit.html', restaurants=restaurants)
 
 @bp.route('/orders')
 @admin_required
 def all_orders():
     orders = Order.query.order_by(Order.order_date.desc()).all()
-    return render_template('admin/orders.html', orders=orders)
+    return render_template('dashboard_order.html', orders=orders)
