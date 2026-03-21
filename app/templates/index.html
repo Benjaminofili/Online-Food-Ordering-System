@@ -72,37 +72,30 @@
                         <a class="nav-link active" aria-current="page" href="{{ url_for('customer.dashboard') }}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">about</a>
+                        <a class="nav-link" href="{{ url_for('customer.about') }}">about</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">menu</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">chefs</a>
+                        <a class="nav-link" href="{{ url_for('customer.global_menu') }}">menu</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#">pages <i class="far fa-angle-down"></i></a>
                         <ul class="droap_menu">
-                            <li><a href="#">menu details</a></li>
-                            <li><a href="#">blog details</a></li>
+                            <li><a href="{{ url_for('customer.global_menu') }}">menu details</a></li>
                             <li><a href="{{ url_for('customer.view_cart') }}">cart view</a></li>
                             <li><a href="{{ url_for('customer.checkout') }}">checkout</a></li>
-                            <li><a href="#">payment</a></li>
-                            <li><a href="#">testimonial</a></li>
-                            <li><a href="#">404/Error</a></li>
-                            <li><a href="#">FAQs</a></li>
+                            <li><a href="{{ url_for('customer.checkout') }}">payment</a></li>
+                            <li><a href="{{ url_for('customer.testimonial') }}">testimonial</a></li>
+                            <li><a href="/trigger-404-error">404/Error</a></li>
+                            <li><a href="{{ url_for('customer.faq') }}">FAQs</a></li>
                             <li><a href="{{ url_for('auth.login') }}">sign in</a></li>
                             <li><a href="{{ url_for('auth.register') }}">sign up</a></li>
-                            <li><a href="#">forgot password</a></li>
-                            <li><a href="#">privacy policy</a></li>
-                            <li><a href="#">terms and condition</a></li>
+                            <li><a href="{{ url_for('auth.forgot_password') }}">forgot password</a></li>
+                            <li><a href="{{ url_for('customer.privacy_policy') }}">privacy policy</a></li>
+                            <li><a href="{{ url_for('customer.terms_condition') }}">terms and condition</a></li>
                         </ul>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">blog</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">contact</a>
+                        <a class="nav-link" href="{{ url_for('customer.contact') }}">contact</a>
                     </li>
                 </ul>
                 <ul class="menu_icon d-flex flex-wrap">
@@ -156,9 +149,8 @@
                                         <h1>Delicious Foods With Wonderful Eating</h1>
                                         <p>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Ipsum fugit
                                             minimaet debitis ut distinctio optio.</p>
-                                        <form method="POST" action="">
-                            {{ form.csrf_token if form is defined else "" }}
-                                            <input type="text" placeholder="Search . . .">
+                                        <form method="GET" action="{{ url_for('customer.global_menu') }}">
+                                            <input type="text" name="q" placeholder="Search dishes or restaurants...">
                                             <button type="submit" class="common_btn">search</button>
                                         </form>
                                     </div>
@@ -346,7 +338,7 @@
     <!--=============================
         RESERVATION START
     ==============================-->
-    <section class="reservation mt_100 xs_mt_70">
+    <!-- <section class="reservation mt_100 xs_mt_70">
         <div class="container">
             <div class="reservation_bg" style="background: url({{ url_for('static', filename='regfood/images/reservation_bg.jpg') }});">
                 <div class="row">
@@ -416,7 +408,7 @@
                 </div>
             </div>
         </div>
-    </section>
+    </section> -->
     <!--=============================
         RESERVATION END
     ==============================-->
@@ -483,7 +475,7 @@
     <!--=============================
         TEAM START
     ==============================-->
-    <section class="team mt_100 xs_mt_70 pt_95 xs_pt_65 pb_95 xs_pb_65">
+    <!-- <section class="team mt_100 xs_mt_70 pt_95 xs_pt_65 pb_95 xs_pb_65">
         <div class="container">
             <div class="row wow fadeInUp" data-wow-duration="1s">
                 <div class="col-md-8 col-lg-7 col-xl-6">
@@ -582,7 +574,7 @@
                 </div>
             </div>
         </div>
-    </section>
+    </section> -->
     <!--=============================
         TEAM END
     ==============================-->
@@ -829,129 +821,22 @@
 
 
     <!--=============================
-        BLOG START
+        SUBSCRIBE START
     ==============================-->
-    <section class="blog pt_95 xs_pt_65 pb_65 xs_pb_35">
-        <div class="container">
-            <div class="row wow fadeInUp" data-wow-duration="1s">
-                <div class="col-md-8 col-lg-7 col-xl-6">
-                    <div class="section_heading mb_25">
-                        <h4>news & blogs</h4>
-                        <h2>our latest foods blog</h2>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row blog_slider">
-                <div class="col-xl-4 col-md-6 wow fadeInUp" data-wow-duration="1s">
-                    <div class="single_blog">
-                        <div class="single_blog_img">
-                            <img src="{{ url_for('static', filename='regfood/images/blog_1.jpg') }}" alt="author" class="img-fluid w-100">
-                        </div>
-                        <div class="single_blog_author">
-                            <div class="img">
-                                <img src="{{ url_for('static', filename='regfood/images/client_1.png') }}" alt="author" class="img-fluid w-100">
+    <section class="subscribe" style="background: url({{ url_for('static', filename='regfood/images/counter_bg.jpg') }});">
+        <div class="subscribe_overlay pt_115 xs_pt_85 pb_120 xs_pb_90" style="background: #231f40c4;">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-xl-6 col-lg-8 wow fadeInUp" data-wow-duration="1s">
+                        <div class="subscribe_text text-center">
+                            <div class="section_heading heading_center mb_30">
+                                <h4>newsletter</h4>
+                                <h2 class="text-white">subscribe to join our community</h2>
                             </div>
-                            <div class="text">
-                                <h5>moni islam</h5>
-                                <p>14 May 2023</p>
-                            </div>
-                        </div>
-                        <div class="single_blog_text">
-                            <a class="category" href="#">food</a>
-                            <a class="title" href="#">Operates approximately 400 restaurants</a>
-                            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Veniam eos, odit beatae
-                                sequi
-                                tenetur quidem.</p>
-                            <div class="single_blog_footer">
-                                <a class="read_btn" href="#">read more <i
-                                        class="far fa-long-arrow-right"></i></a>
-                                <span><i class="far fa-comments"></i> 120</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-4 col-md-6 wow fadeInUp" data-wow-duration="1s">
-                    <div class="single_blog">
-                        <div class="single_blog_img">
-                            <img src="{{ url_for('static', filename='regfood/images/blog_2.jpg') }}" alt="author" class="img-fluid w-100">
-                        </div>
-                        <div class="single_blog_author">
-                            <div class="img">
-                                <img src="{{ url_for('static', filename='regfood/images/client_2.png') }}" alt="author" class="img-fluid w-100">
-                            </div>
-                            <div class="text">
-                                <h5>john deo</h5>
-                                <p>30 Jan 2023</p>
-                            </div>
-                        </div>
-                        <div class="single_blog_text">
-                            <a class="category" href="#">restaurent</a>
-                            <a class="title" href="#">Introducing Our New Summer Menu!</a>
-                            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Veniam eos, odit beatae
-                                sequi
-                                tenetur quidem.</p>
-                            <div class="single_blog_footer">
-                                <a class="read_btn" href="#">read more <i
-                                        class="far fa-long-arrow-right"></i></a>
-                                <span><i class="far fa-comments"></i> 120</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-4 col-md-6 wow fadeInUp" data-wow-duration="1s">
-                    <div class="single_blog">
-                        <div class="single_blog_img">
-                            <img src="{{ url_for('static', filename='regfood/images/blog_3.jpg') }}" alt="author" class="img-fluid w-100">
-                        </div>
-                        <div class="single_blog_author">
-                            <div class="img">
-                                <img src="{{ url_for('static', filename='regfood/images/client_3.png') }}" alt="author" class="img-fluid w-100">
-                            </div>
-                            <div class="text">
-                                <h5>jakia taima</h5>
-                                <p>20 Apr 2023</p>
-                            </div>
-                        </div>
-                        <div class="single_blog_text">
-                            <a class="category" href="#">resort</a>
-                            <a class="title" href="#">Summer Water Rosé + Bubbly Rosé is Here!</a>
-                            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Veniam eos, odit beatae
-                                sequi
-                                tenetur quidem.</p>
-                            <div class="single_blog_footer">
-                                <a class="read_btn" href="#">read more <i
-                                        class="far fa-long-arrow-right"></i></a>
-                                <span><i class="far fa-comments"></i> 120</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-4 col-md-6 wow fadeInUp" data-wow-duration="1s">
-                    <div class="single_blog">
-                        <div class="single_blog_img">
-                            <img src="{{ url_for('static', filename='regfood/images/blog_4.jpg') }}" alt="author" class="img-fluid w-100">
-                        </div>
-                        <div class="single_blog_author">
-                            <div class="img">
-                                <img src="{{ url_for('static', filename='regfood/images/client_1.png') }}" alt="author" class="img-fluid w-100">
-                            </div>
-                            <div class="text">
-                                <h5>israt sultana</h5>
-                                <p>21 Mar 2023</p>
-                            </div>
-                        </div>
-                        <div class="single_blog_text">
-                            <a class="category" href="#">party</a>
-                            <a class="title" href="#">Tender fried baby squid with a salt, pepper</a>
-                            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Veniam eos, odit beatae
-                                sequi
-                                tenetur quidem.</p>
-                            <div class="single_blog_footer">
-                                <a class="read_btn" href="#">read more <i
-                                        class="far fa-long-arrow-right"></i></a>
-                                <span><i class="far fa-comments"></i> 120</span>
-                            </div>
+                            <form action="#" method="POST" style="position: relative;">
+                                <input type="email" placeholder="Your Email Address" style="border-radius: 50px; padding: 18px 25px; border: none; background: rgba(255,255,255,0.1); color: #fff; font-size: 16px;">
+                                <button type="submit" class="common_btn" style="position: absolute; right: 10px; top: 10px; padding: 10px 30px;">subscribe</button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -959,7 +844,7 @@
         </div>
     </section>
     <!--=============================
-        BLOG END
+        SUBSCRIBE END
     ==============================-->
 
 
@@ -991,9 +876,9 @@
                         <div class="footer_content">
                             <h3>Short Link</h3>
                             <ul>
-                                <li><a href="#">Home</a></li>
-                                <li><a href="#">About Us</a></li>
-                                <li><a href="#">Contact Us</a></li>
+                                <li><a href="{{ url_for('customer.dashboard') }}">Home</a></li>
+                                <li><a href="{{ url_for('customer.about') }}">About Us</a></li>
+                                <li><a href="{{ url_for('customer.contact') }}">Contact Us</a></li>
                                 <li><a href="#">Our Service</a></li>
                                 <li><a href="#">gallery</a></li>
                             </ul>
@@ -1003,11 +888,11 @@
                         <div class="footer_content">
                             <h3>Help Link</h3>
                             <ul>
-                                <li><a href="#">Terms & Conditions</a></li>
-                                <li><a href="#">Privacy Policy</a></li>
+                                <li><a href="{{ url_for('customer.terms_condition') }}">Terms & Conditions</a></li>
+                                <li><a href="{{ url_for('customer.privacy_policy') }}">Privacy Policy</a></li>
                                 <li><a href="#">Refund Policy</a></li>
-                                <li><a href="#">FAQ</a></li>
-                                <li><a href="#">contact</a></li>
+                                <li><a href="{{ url_for('customer.faq') }}">FAQ</a></li>
+                                <li><a href="{{ url_for('customer.contact') }}">contact</a></li>
                             </ul>
                         </div>
                     </div>

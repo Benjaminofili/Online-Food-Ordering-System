@@ -144,3 +144,9 @@ def register():
         flash('Registration successful! Please log in.', 'success')
         return redirect(url_for('auth.login'))
     return render_template('sign_up.html', form=form)
+
+@bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if current_user.is_authenticated:
+        return _dashboard_redirect()
+    return render_template('forgot_password.html')

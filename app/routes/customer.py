@@ -133,6 +133,39 @@ def dashboard():
         selected_rating=min_rating
     )
 
+@bp.route('/menu')
+@customer_required
+def global_menu():
+    query = request.args.get('q')
+    category_id = request.args.get('category_id', type=int)
+    food_type_id = request.args.get('food_type_id', type=int)
+    page = request.args.get('page', 1, type=int)
+
+    dish_query = Dish.query.filter_by(is_available=True).join(Restaurant)
+
+    if category_id:
+        dish_query = dish_query.filter(Dish.category_id == category_id)
+    if food_type_id:
+        dish_query = dish_query.filter(Dish.food_type_id == food_type_id)
+    if query:
+        dish_query = dish_query.filter(Dish.name.ilike(f'%{query}%') | Dish.description.ilike(f'%{query}%'))
+
+    # Paginate dishes (12 per page)
+    paginated_dishes = dish_query.order_by(Dish.id.desc()).paginate(page=page, per_page=12, error_out=False)
+
+    categories = Category.query.all()
+    food_types = FoodType.query.all()
+
+    return render_template(
+        'menu.html', 
+        dishes=paginated_dishes,
+        query=query,
+        categories=categories,
+        food_types=food_types,
+        selected_category=category_id,
+        selected_food_type=food_type_id
+    )
+
 @bp.route('/restaurant/<int:id>')
 @customer_required
 def restaurant(id):
@@ -384,3 +417,34 @@ def api_active_orders():
         'status': o.status,
         'delivery_time': o.delivery_time.strftime('%I:%M %p') if o.delivery_time else None
     } for o in orders]}
+
+# ── Static Pages ─────────────────────────────────────────────────────────────
+
+@bp.route('/about')
+def about():
+    return render_template('about.html')
+
+@bp.route('/contact')
+def contact():
+    return render_template('contact.html')
+
+@bp.route('/faq')
+def faq():
+    return render_template('faq.html')
+
+@bp.route('/privacy-policy')
+def privacy_policy():
+    return render_template('privacy_policy.html')
+
+@bp.route('/terms-condition')
+def terms_condition():
+    return render_template('terms_condition.html')
+
+@bp.route('/testimonial')
+def testimonial():
+    return render_template('testimonial.html')
+
+@bp.route('/trigger-404-error')
+def trigger_404():
+    return render_template('404.html'), 404
+
