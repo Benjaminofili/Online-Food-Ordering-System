@@ -1,0 +1,189 @@
+{% extends "base_owner.html" %}
+{% block title %}Orders{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-1">
+    <h1 class="mt-4">Orders</h1>
+</div>
+<ol class="breadcrumb mb-4">
+    <li class="breadcrumb-item"><a href="{{ url_for('owner.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Orders</li>
+</ol>
+
+<!-- Status Filters -->
+<div class="mb-4 d-flex gap-2">
+    <a href="{{ url_for('owner.orders') }}" class="btn btn-sm {{ 'btn-primary' if not request.args.get('status') else 'btn-outline-primary' }} mr-2">All Orders</a>
+    <a href="{{ url_for('owner.orders', status='pending') }}" class="btn btn-sm {{ 'btn-warning text-dark' if request.args.get('status') == 'pending' else 'btn-outline-warning text-dark' }} mr-2">Pending</a>
+    <a href="{{ url_for('owner.orders', status='accepted') }}" class="btn btn-sm {{ 'btn-info' if request.args.get('status') == 'accepted' else 'btn-outline-info' }} mr-2">Preparing</a>
+    <a href="{{ url_for('owner.orders', status='delivered') }}" class="btn btn-sm {{ 'btn-success' if request.args.get('status') == 'delivered' else 'btn-outline-success' }} mr-2">Delivered</a>
+    <a href="{{ url_for('owner.orders', status='cancelled') }}" class="btn btn-sm {{ 'btn-danger' if request.args.get('status') == 'cancelled' else 'btn-outline-danger' }}">Cancelled</a>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-clipboard-list mr-2"></i>Order Management</h6>
+    </div>
+    <div class="card-body">
+        {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover" id="ordersTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Date & Time</th>
+                        <th>Customer</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td><strong>#{{ order.id }}</strong></td>
+                        <td>{{ order.order_date.strftime('%b %d, %Y %I:%M %p') }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div>
+                                    <div class="font-weight-bold">{{ order.customer.name }}</div>
+                                    <small style="color: var(--admin-muted);">{{ order.delivery_address if order.delivery_address else 'Pickup' }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="font-weight-bold" style="color: var(--admin-primary);">${{ "%.2f"|format(order.total_amount) }}</td>
+                        <td>
+                            {% if order.status == 'pending' %}
+                                <span class="badge badge-warning text-dark px-2 py-1"><i class="fas fa-clock mr-1"></i>Pending</span>
+                            {% elif order.status == 'accepted' or order.status == 'preparing' %}
+                                <span class="badge badge-info px-2 py-1"><i class="fas fa-fire mr-1"></i>Preparing</span>
+                            {% elif order.status == 'delivered' %}
+                                <span class="badge badge-success px-2 py-1"><i class="fas fa-check-double mr-1"></i>Delivered</span>
+                            {% elif order.status == 'cancelled' %}
+                                <span class="badge badge-danger px-2 py-1"><i class="fas fa-ban mr-1"></i>Cancelled</span>
+                            {% else %}
+                                <span class="badge badge-secondary px-2 py-1">{{ order.status.title() }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-primary mb-1 view-order-btn" data-toggle="modal" data-target="#orderModal{{ order.id }}">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            
+                            <!-- Status Dropdown Action if not fully complete -->
+                            {% if order.status not in ['delivered', 'cancelled'] %}
+                            <div class="dropdown d-inline-block mb-1">
+                                <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="statusDropdown{{ order.id }}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Update
+                                </button>
+                                <div class="dropdown-menu" aria-labelledby="statusDropdown{{ order.id }}" style="background-color: var(--admin-card); border-color: var(--admin-border);">
+                                    {% if order.status == 'pending' %}
+                                    <form method="POST" action="/owner/orders/update/{{ order.id }}">
+                                        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                        <input type="hidden" name="status" value="accepted">
+                                        <input type="hidden" name="estimated_time" value="30"> <!-- Default 30 mins -->
+                                        <button type="submit" class="dropdown-item" style="color: var(--admin-text);">Accept Order (30m prep)</button>
+                                    </form>
+                                    <form method="POST" action="/owner/orders/update/{{ order.id }}">
+                                        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                        <input type="hidden" name="status" value="cancelled">
+                                        <button type="submit" class="dropdown-item text-danger">Decline Order</button>
+                                    </form>
+                                    {% elif order.status == 'accepted' or order.status == 'preparing' %}
+                                    <form method="POST" action="/owner/orders/update/{{ order.id }}">
+                                        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                        <input type="hidden" name="status" value="delivered">
+                                        <button type="submit" class="dropdown-item text-success">Mark as Delivered</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    
+                    <!-- Order Details Modal -->
+                    <div class="modal fade" id="orderModal{{ order.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content" style="background-color: var(--admin-card); color: var(--admin-text); border-color: var(--admin-border);">
+                                <div class="modal-header border-bottom-0">
+                                    <h5 class="modal-title font-weight-bold">Order #{{ order.id }} Details</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: var(--admin-muted);">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body pt-0">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <p class="mb-1"><small style="color: var(--admin-muted);">Customer</small></p>
+                                            <p class="font-weight-bold mb-0">{{ order.customer.name }}</p>
+                                            <p class="mb-0">{{ order.customer.phone or '' }}</p>
+                                            <p>{{ order.customer.email }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="mb-1"><small style="color: var(--admin-muted);">Delivery Details</small></p>
+                                            <p class="font-weight-bold mb-0">{{ order.delivery_address if order.delivery_address else 'Store Pickup' }}</p>
+                                            {% if order.delivery_time %}
+                                            <p class="mb-0"><small><i class="fas fa-clock text-warning"></i> Expected: {{ order.delivery_time.strftime('%I:%M %p') }}</small></p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <hr style="border-color: var(--admin-border);">
+                                    <h6 class="font-weight-bold mb-3">Items Ordered</h6>
+                                    <ul class="list-group list-group-flush mb-3">
+                                        {% for item in order.items %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-center" style="background-color: transparent; border-color: var(--admin-border); padding-left: 0; padding-right: 0;">
+                                            <div>
+                                                {% if item.dish.image_url %}
+                                                <img src="{{ item.dish.image_url }}" alt="dish" class="rounded mr-2" style="width:40px;height:40px;object-fit:cover;">
+                                                {% endif %}
+                                                <strong>{{ item.quantity }}x</strong> {{ item.dish.name }}
+                                            </div>
+                                            <span>${{ "%.2f"|format(item.price * item.quantity) }}</span>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="font-weight-bold">Total Amount</span>
+                                        <span class="h5 mb-0" style="color: var(--admin-primary);">${{ "%.2f"|format(order.total_amount) }}</span>
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-top-0">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-receipt fa-4x mb-4" style="color: var(--admin-muted);"></i>
+            <h5 style="color: var(--admin-heading);">No orders found</h5>
+            <p style="color: var(--admin-muted);">You don't have any orders matching the current filter.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    if ($('#ordersTable tbody tr').length > 0) {
+        $('#ordersTable').DataTable({
+            "order": [[ 0, "desc" ]], // Order by ID descending by default
+            "columnDefs": [
+                { "orderable": false, "targets": [5] } // Disable sorting on actions column
+            ],
+            "pageLength": 10,
+            "language": {
+                "search": "<i class='fas fa-search'></i>",
+                "searchPlaceholder": "Search orders...",
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

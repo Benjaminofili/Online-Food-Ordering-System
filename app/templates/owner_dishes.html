@@ -1,0 +1,119 @@
+{% extends "base_owner.html" %}
+{% block title %}My Dishes{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-1">
+    <h1 class="mt-4">My Dishes</h1>
+    <a href="{{ url_for('owner.add_dish') }}" class="btn btn-primary mt-3">
+        <i class="fas fa-plus mr-2"></i>Add New Dish
+    </a>
+</div>
+<ol class="breadcrumb mb-4">
+    <li class="breadcrumb-item"><a href="{{ url_for('owner.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Dishes</li>
+</ol>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-hamburger mr-2"></i>All Dishes</h6>
+        <span class="badge badge-primary badge-pill">{{ dishes|length }} total</span>
+    </div>
+    <div class="card-body">
+        {% if dishes %}
+        <div class="table-responsive">
+            <table class="table table-bordered" id="dishesTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Type</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dish in dishes %}
+                    <tr>
+                        <td style="width: 60px;">
+                            {% if dish.image_url %}
+                            <img src="{{ dish.image_url }}" alt="{{ dish.name }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
+                            {% else %}
+                            <div style="width:50px; height:50px; border-radius:8px; background: var(--admin-surface); display:flex; align-items:center; justify-content:center;">
+                                <i class="fas fa-utensils" style="color: var(--admin-muted);"></i>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ dish.name }}</strong></td>
+                        <td>{{ dish.category.name if dish.category else '—' }}</td>
+                        <td>
+                            {% if dish.food_type %}
+                                {% if not dish.food_type.is_approved %}
+                                <span class="badge badge-warning text-dark">{{ dish.food_type.name }} (Pending)</span>
+                                {% else %}
+                                <span class="badge badge-secondary">{{ dish.food_type.name }}</span>
+                                {% endif %}
+                            {% else %}—{% endif %}
+                        </td>
+                        <td><strong style="color: var(--admin-primary);">${{ "%.2f"|format(dish.price) }}</strong></td>
+                        <td>
+                            {% if dish.is_available %}
+                            <span class="badge badge-success"><i class="fas fa-check-circle mr-1"></i>Active</span>
+                            {% else %}
+                            <span class="badge badge-secondary"><i class="fas fa-times-circle mr-1"></i>Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('owner.edit_dish', id=dish.id) }}" class="btn btn-sm btn-outline-primary mr-1">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('owner.delete_dish', id=dish.id) }}" class="d-inline"
+                                  onsubmit="return confirm('Are you sure you want to delete {{ dish.name }}?');">
+                                {% if csrf_token %}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                {% endif %}
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-hamburger fa-4x mb-4" style="color: var(--admin-muted);"></i>
+            <h5 style="color: var(--admin-heading);">No dishes yet!</h5>
+            <p style="color: var(--admin-muted);">Start building your menu by adding your first dish.</p>
+            <a href="{{ url_for('owner.add_dish') }}" class="btn btn-primary">
+                <i class="fas fa-plus mr-2"></i>Add Your First Dish
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    if ($('#dishesTable tbody tr').length > 0) {
+        $('#dishesTable').DataTable({
+            "columnDefs": [
+                { "orderable": false, "targets": [0, 6] }
+            ],
+            "pageLength": 10,
+            "language": {
+                "search": "<i class='fas fa-search'></i>",
+                "searchPlaceholder": "Search dishes...",
+                "emptyTable": "No dishes found.",
+                "zeroRecords": "No matching dishes."
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends "base_owner.html" %}
+{% block title %}Media & Menus{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-1">
+    <h1 class="mt-4">Media &amp; Menus</h1>
+</div>
+<ol class="breadcrumb mb-4">
+    <li class="breadcrumb-item"><a href="{{ url_for('owner.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Media &amp; Menus</li>
+</ol>
+
+<div class="row">
+    <!-- Upload Form -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-cloud-upload-alt mr-2"></i>Upload Media</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('owner.media') }}" enctype="multipart/form-data">
+                    {{ csrf_token_input | safe if csrf_token_input is defined else '' }}
+                    {% if csrf_token %}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {% endif %}
+
+                    <div class="form-group">
+                        <label for="mediaType">Media Type</label>
+                        <select class="form-control custom-select" id="mediaType" name="media_type" onchange="toggleInput(this.value)">
+                            <option value="menu_image">Menu Image</option>
+                            <option value="video">Video (URL)</option>
+                        </select>
+                    </div>
+
+                    <!-- Image Upload Input -->
+                    <div class="form-group" id="imageInput">
+                        <label>Image File</label>
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="imageFile" name="image" accept="image/*">
+                            <label class="custom-file-label" for="imageFile">Choose file...</label>
+                        </div>
+                        <small style="color: var(--admin-muted);">JPG, PNG, WEBP — max 5MB</small>
+                    </div>
+
+                    <!-- Video URL or File Input -->
+                    <div class="form-group" id="videoInput" style="display: none;">
+                        <label>Video File (Optional)</label>
+                        <div class="custom-file mb-2">
+                            <input type="file" class="custom-file-input" id="videoFile" name="video_file" accept="video/*" onchange="document.getElementById('videoFileLabel').textContent = this.files[0]?.name || 'Choose video...';">
+                            <label class="custom-file-label" id="videoFileLabel" for="videoFile">Choose video...</label>
+                        </div>
+                        <small style="color: var(--admin-muted); display: block; margin-bottom: 10px;">MP4, WebM — max 50MB</small>
+
+                        <div class="text-center mb-2" style="color: var(--admin-muted); font-size: 0.85rem;">— OR —</div>
+
+                        <label for="videoUrl">Video URL (YouTube / Vimeo)</label>
+                        <input type="url" class="form-control" id="videoUrl" name="video_url" placeholder="https://youtube.com/watch?v=...">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="displayOrder">Display Order</label>
+                        <input type="number" class="form-control" id="displayOrder" name="display_order" value="0" min="0">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-upload mr-2"></i>Upload
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Media Gallery -->
+    <div class="col-lg-8 mb-4">
+        <!-- Menu Images -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-image mr-2"></i>Menu Images ({{ menus|length }})</h6>
+            </div>
+            <div class="card-body">
+                {% if menus %}
+                <div class="row">
+                    {% for item in menus %}
+                    <div class="col-md-4 col-sm-6 mb-3">
+                        <div class="card h-100" style="border: 1px solid var(--admin-border) !important; overflow: hidden;">
+                            <img src="{{ item.url }}" alt="Menu Image" class="card-img-top" style="height: 160px; object-fit: cover;">
+                            <div class="card-footer p-2 text-center">
+                                <small style="color: var(--admin-muted);">Order: {{ item.display_order }}</small>
+                                <form method="POST" action="{{ url_for('owner.delete_media', id=item.id) }}" class="d-inline" onsubmit="return confirm('Delete this image?');">
+                                    {% if csrf_token %}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    {% endif %}
+                                    <button type="submit" class="btn btn-sm btn-danger ml-2">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-images fa-3x mb-3" style="color: var(--admin-muted);"></i>
+                    <p style="color: var(--admin-muted);">No menu images uploaded yet.</p>
+                    <p class="small" style="color: var(--admin-muted);">Upload your first menu image using the form on the left!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Videos -->
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-video mr-2"></i>Restaurant Videos ({{ videos|length }})</h6>
+            </div>
+            <div class="card-body">
+                {% if videos %}
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Video URL</th>
+                                <th>Order</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in videos %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td><a href="{{ item.url }}" target="_blank" style="word-break: break-all;">{{ item.url[:60] }}...</a></td>
+                                <td>{{ item.display_order }}</td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('owner.delete_media', id=item.id) }}" onsubmit="return confirm('Delete this video?');">
+                                        {% if csrf_token %}
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        {% endif %}
+                                        <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-video fa-3x mb-3" style="color: var(--admin-muted);"></i>
+                    <p style="color: var(--admin-muted);">No videos added yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleInput(type) {
+    if (type === 'video') {
+        document.getElementById('imageInput').style.display = 'none';
+        document.getElementById('videoInput').style.display = 'block';
+    } else {
+        document.getElementById('imageInput').style.display = 'block';
+        document.getElementById('videoInput').style.display = 'none';
+    }
+}
+// Show file name on custom file input
+document.getElementById('imageFile')?.addEventListener('change', function(e) {
+    var label = this.nextElementSibling;
+    label.textContent = e.target.files[0]?.name || 'Choose file...';
+});
+</script>
+{% endblock %}

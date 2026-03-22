@@ -1,0 +1,164 @@
+{% extends "base_owner.html" %}
+{% block title %}{{ 'Edit Dish' if dish else 'Add New Dish' }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-1">
+    <h1 class="mt-4">{{ 'Edit Dish' if dish else 'Add New Dish' }}</h1>
+    <a href="{{ url_for('owner.dishes') }}" class="btn btn-outline-primary mt-3">
+        <i class="fas fa-arrow-left mr-2"></i>Back to Dishes
+    </a>
+</div>
+<ol class="breadcrumb mb-4">
+    <li class="breadcrumb-item"><a href="{{ url_for('owner.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('owner.dishes') }}">Dishes</a></li>
+    <li class="breadcrumb-item active">{{ 'Edit' if dish else 'Add' }}</li>
+</ol>
+
+<div class="row">
+    <div class="col-xl-8 col-lg-10 mx-auto">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-{{ 'edit' if dish else 'plus-circle' }} mr-2"></i>
+                    Dish Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="POST"
+                      action="{{ url_for('owner.edit_dish', id=dish.id) if dish else url_for('owner.add_dish') }}"
+                      enctype="multipart/form-data">
+                    {% if csrf_token %}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {% endif %}
+
+                    <!-- Image preview + upload -->
+                    <div class="form-group text-center mb-4">
+                        <div id="imagePreviewWrap" style="margin-bottom: 12px;">
+                            {% if dish and dish.image_url %}
+                            <img id="imgPreview" src="{{ dish.image_url }}" alt="Dish Image"
+                                 style="width:160px; height:160px; object-fit:cover; border-radius:12px; border:2px solid var(--admin-border);">
+                            {% else %}
+                            <div id="imgPreview" style="width:160px; height:160px; border-radius:12px; border:2px dashed var(--admin-border); display:inline-flex; align-items:center; justify-content:center;">
+                                <i class="fas fa-image fa-3x" style="color: var(--admin-muted);"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="custom-file" style="max-width: 280px; display: inline-block;">
+                            <input type="file" class="custom-file-input" id="dishImage" name="image" accept="image/*" onchange="previewImage(this)">
+                            <label class="custom-file-label" for="dishImage">
+                                {{ 'Change Image' if dish and dish.image_url else 'Upload Image' }}
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <!-- Dish Name -->
+                        <div class="form-group col-md-8">
+                            <label for="dishName">Dish Name *</label>
+                            <input type="text" class="form-control" id="dishName" name="name"
+                                   value="{{ dish.name if dish else '' }}" placeholder="e.g. Grilled Chicken Burger" required>
+                        </div>
+                        <!-- Price -->
+                        <div class="form-group col-md-4">
+                            <label for="dishPrice">Price ($) *</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" style="background: var(--admin-card); border-color: var(--admin-border); color: var(--admin-primary);">$</span>
+                                </div>
+                                <input type="number" step="0.01" min="0" class="form-control" id="dishPrice" name="price"
+                                       value="{{ dish.price if dish else '' }}" placeholder="0.00" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <!-- Category -->
+                        <div class="form-group col-md-6">
+                            <label for="categoryId">Category</label>
+                            <select class="form-control custom-select" id="categoryId" name="category_id">
+                                <option value="">— Select Category —</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}" {{ 'selected' if dish and dish.category_id == cat.id }}>{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <!-- Food Type -->
+                        <div class="form-group col-md-6">
+                            <label for="foodTypeId">Food Type</label>
+                            <select class="form-control custom-select" id="foodTypeId" name="food_type_id">
+                                <option value="">— Select Type —</option>
+                                {% for ft in food_types %}
+                                <option value="{{ ft.id }}" {{ 'selected' if dish and dish.food_type_id == ft.id }}>
+                                    {{ ft.name }}{% if not ft.is_approved %} (Awaiting Approval){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small style="color: var(--admin-muted);">
+                                Or add a custom type below (will need admin approval)
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Custom Food Type -->
+                    <div class="form-group">
+                        <label for="newFoodType">New Custom Food Type <small style="color: var(--admin-muted);">(leave blank to use selection above)</small></label>
+                        <input type="text" class="form-control" id="newFoodType" name="new_food_type"
+                               placeholder="e.g. Fusion Food, Plant-Based...">
+                        <div class="mt-2" style="background: rgba(246,194,62,0.1); border-left: 3px solid #f6c23e; padding: 8px 12px; border-radius: 0 6px 6px 0;">
+                            <small><i class="fas fa-info-circle mr-1" style="color: #f6c23e;"></i>
+                            Custom types are submitted for admin review. They'll appear as "Awaiting Approval" until confirmed.</small>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="form-group">
+                        <label for="dishDescription">Description</label>
+                        <textarea class="form-control" id="dishDescription" name="description" rows="3"
+                                  placeholder="Describe your dish...">{{ dish.description if dish else '' }}</textarea>
+                    </div>
+
+                    <!-- Availability Toggle -->
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="isAvailable" name="is_available"
+                                   {{ 'checked' if not dish or dish.is_available }}>
+                            <label class="custom-control-label" for="isAvailable" style="font-size: 0.9rem; color: var(--admin-text);">
+                                Available on menu
+                            </label>
+                        </div>
+                    </div>
+
+                    <hr style="border-color: var(--admin-border);">
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('owner.dishes') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times mr-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-{{ 'save' if dish else 'plus' }} mr-2"></i>
+                            {{ 'Save Changes' if dish else 'Add Dish' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var wrap = document.getElementById('imagePreviewWrap');
+            wrap.innerHTML = '<img id="imgPreview" src="' + e.target.result + '" ' +
+                'style="width:160px; height:160px; object-fit:cover; border-radius:12px; border:2px solid var(--admin-primary);">';
+        };
+        reader.readAsDataURL(input.files[0]);
+        input.nextElementSibling.textContent = input.files[0].name;
+    }
+}
+</script>
+{% endblock %}

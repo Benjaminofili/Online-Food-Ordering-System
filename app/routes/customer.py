@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, flash, redirect, url_for, request,
 from flask_login import login_required, current_user
 from app import db
 from app.models import Restaurant, Dish, Order, OrderItem, Review, Coupon, Category, FoodType, Wishlist, RestaurantMedia
-from app.utils import upload_image_to_cloudinary
+from app.utils import upload_file_to_cloudinary
 from sqlalchemy import func
 from datetime import datetime
 
@@ -551,7 +551,7 @@ def edit_profile():
         # Handle profile image upload
         image_file = request.files.get('profile_image')
         if image_file and image_file.filename != '':
-            image_url = upload_image_to_cloudinary(image_file)
+            image_url = upload_file_to_cloudinary(image_file)
             if image_url:
                 current_user.profile_image = image_url
         

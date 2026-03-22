@@ -1,0 +1,154 @@
+{% extends "base_owner.html" %}
+{% block title %}Coupons & Offers{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-1">
+    <h1 class="mt-4">Coupons &amp; Offers</h1>
+</div>
+<ol class="breadcrumb mb-4">
+    <li class="breadcrumb-item"><a href="{{ url_for('owner.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Coupons</li>
+</ol>
+
+<div class="row">
+    <!-- Add New Coupon Form -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-ticket-alt mr-2"></i>Create New Coupon</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('owner.add_coupon') }}">
+                    {{ csrf_token_input | safe if csrf_token_input is defined else '' }}
+                    {% if csrf_token %}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {% endif %}
+
+                    <div class="form-group">
+                        <label for="code">Coupon Code *</label>
+                        <input type="text" style="text-transform: uppercase;" class="form-control" id="code" name="code" placeholder="e.g., SUMMER50" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="discount_type">Discount Type *</label>
+                        <select class="form-control custom-select" id="discount_type" name="discount_type" required>
+                            <option value="percentage">Percentage (%)</option>
+                            <option value="fixed">Fixed Amount ($)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="discount_value">Discount Value *</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="discount_value" name="discount_value" placeholder="e.g., 20" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="valid_until">Valid Until (Optional)</label>
+                        <input type="date" class="form-control" id="valid_until" name="valid_until">
+                    </div>
+
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="isActive" name="is_active" checked>
+                            <label class="custom-control-label" for="isActive">Coupon is Active immediately</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block mt-4">
+                        <i class="fas fa-plus mr-2"></i>Create Coupon
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Coupons Table -->
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-list mr-2"></i>All Coupons ({{ coupons|length }})</h6>
+            </div>
+            <div class="card-body">
+                {% if coupons %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="couponsTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Discount</th>
+                                <th>Valid Until</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for coupon in coupons %}
+                            <tr>
+                                <td><strong class="text-primary">{{ coupon.code }}</strong></td>
+                                <td>
+                                    {% if coupon.discount_type == 'percentage' %}
+                                        {{ coupon.discount_value }}% Off
+                                    {% else %}
+                                        ${{ "%.2f"|format(coupon.discount_value|float) }} Off
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if coupon.valid_until %}
+                                        {{ coupon.valid_until.strftime('%b %d, %Y') }}
+                                    {% else %}
+                                        <span style="color: var(--admin-muted);">No Expiry</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if coupon.is_active %}
+                                        <span class="badge badge-success"><i class="fas fa-check-circle mr-1"></i>Active</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary"><i class="fas fa-times-circle mr-1"></i>Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <form method="POST" action="{{ url_for('owner.delete_coupon', id=coupon.id) }}" class="d-inline" onsubmit="return confirm('Delete this coupon?');">
+                                        {% if csrf_token %}
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        {% endif %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Coupon">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-percent fa-4x mb-4" style="color: var(--admin-muted);"></i>
+                    <h5 style="color: var(--admin-heading);">No coupons offered yet</h5>
+                    <p style="color: var(--admin-muted);">Create promotional codes to attract more customers.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    if ($('#couponsTable tbody tr').length > 0) {
+        $('#couponsTable').DataTable({
+            "columnDefs": [
+                { "orderable": false, "targets": [4] }
+            ],
+            "pageLength": 10,
+            "language": {
+                "search": "<i class='fas fa-search'></i>",
+                "searchPlaceholder": "Search coupons...",
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

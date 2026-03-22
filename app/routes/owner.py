@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_login import login_required, current_user
 from app import db
 from app.models import Restaurant, Dish, Order, Category, FoodType, Coupon, OrderItem, RestaurantMedia
-from app.utils import upload_image_to_cloudinary
+from app.utils import upload_file_to_cloudinary
 from datetime import datetime, timedelta
 from sqlalchemy import func
 from spellchecker import SpellChecker
@@ -110,7 +110,7 @@ def profile():
         logo_file = request.files.get('logo')
         logo_url = None
         if logo_file and logo_file.filename != '':
-            logo_url = upload_image_to_cloudinary(logo_file)
+            logo_url = upload_file_to_cloudinary(logo_file)
         
         if not restaurant:
             restaurant = Restaurant(owner_id=current_user.id)
@@ -136,7 +136,7 @@ def dishes():
     if not restaurant:
         return redirect(url_for('owner.profile'))
     dishes = Dish.query.filter_by(restaurant_id=restaurant.id).all()
-    return render_template('dashboard_wishlist.html', dishes=dishes)
+    return render_template('owner_dishes.html', dishes=dishes)
 
 @bp.route('/dishes/add', methods=['GET', 'POST'])
 @owner_required
@@ -154,7 +154,7 @@ def add_dish():
         image_file = request.files.get('image')
         image_url = None
         if image_file and image_file.filename != '':
-            image_url = upload_image_to_cloudinary(image_file)
+            image_url = upload_file_to_cloudinary(image_file)
             
         food_type_id = request.form.get('food_type_id')
         new_food_type_name = request.form.get('new_food_type')
@@ -190,7 +190,7 @@ def add_dish():
             
         return redirect(url_for('owner.dishes'))
         
-    return render_template('dashboard_address_edit.html', categories=categories, food_types=food_types, dish=None)
+    return render_template('owner_add_edit_dish.html', categories=categories, food_types=food_types, dish=None)
 
 @bp.route('/dishes/edit/<int:id>', methods=['GET', 'POST'])
 @owner_required
@@ -209,7 +209,7 @@ def edit_dish(id):
     if request.method == 'POST':
         image_file = request.files.get('image')
         if image_file and image_file.filename != '':
-            image_url = upload_image_to_cloudinary(image_file)
+            image_url = upload_file_to_cloudinary(image_file)
             if image_url:
                 dish.image_url = image_url
                 
@@ -243,7 +243,7 @@ def edit_dish(id):
             
         return redirect(url_for('owner.dishes'))
         
-    return render_template('dashboard_address_edit.html', categories=categories, food_types=food_types, dish=dish)
+    return render_template('owner_add_edit_dish.html', categories=categories, food_types=food_types, dish=dish)
 
 @bp.route('/dishes/delete/<int:id>', methods=['POST'])
 @owner_required
@@ -268,7 +268,7 @@ def orders():
     if status_filter:
         query = query.filter_by(status=status_filter)
     restaurant_orders = query.order_by(Order.order_date.desc()).all()
-    return render_template('dashboard_order.html', orders=restaurant_orders)
+    return render_template('owner_orders.html', orders=restaurant_orders)
 
 @bp.route('/orders/update/<int:id>', methods=['POST'])
 @owner_required
@@ -301,7 +301,7 @@ def coupons():
         flash('Please set up your restaurant profile first.', 'warning')
         return redirect(url_for('owner.profile'))
     coupons = Coupon.query.filter_by(restaurant_id=restaurant.id).all()
-    return render_template('dashboard_address.html', coupons=coupons)
+    return render_template('owner_coupons.html', coupons=coupons)
 
 @bp.route('/coupons/add', methods=['POST'])
 @owner_required
@@ -354,25 +354,28 @@ def media():
         return redirect(url_for('owner.profile'))
         
     if request.method == 'POST':
-        media_type = request.form.get('media_type') # 'menu' or 'video'
+        media_type = request.form.get('media_type') # 'menu_image' or 'video'
         
         url = None
-        if media_type == 'menu':
+        if media_type == 'menu_image':
             image_file = request.files.get('image')
             if image_file and image_file.filename != '':
-                url = upload_image_to_cloudinary(image_file)
+                url = upload_file_to_cloudinary(image_file)
         elif media_type == 'video':
-            url = request.form.get('video_url')
+            video_file = request.files.get('video_file')
+            if video_file and video_file.filename != '':
+                # Cloudinary auto-detects video files via resource_type='auto'
+                url = upload_file_to_cloudinary(video_file, resource_type="auto")
+            else:
+                url = request.form.get('video_url')
             
         if url:
-            max_order_item = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type=media_type).order_by(RestaurantMedia.display_order.desc()).first()
-            next_order = (max_order_item.display_order + 1) if max_order_item and max_order_item.display_order is not None else 0
-            
+            display_order = request.form.get('display_order', 0, type=int)
             new_media = RestaurantMedia(
                 restaurant_id=restaurant.id,
                 media_type=media_type,
                 url=url,
-                display_order=next_order
+                display_order=display_order
             )
             db.session.add(new_media)
             db.session.commit()
@@ -382,10 +385,10 @@ def media():
             
         return redirect(url_for('owner.media'))
 
-    menus = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='menu').order_by(RestaurantMedia.display_order).all()
+    menus = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='menu_image').order_by(RestaurantMedia.display_order).all()
     videos = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='video').order_by(RestaurantMedia.display_order).all()
     
-    return render_template('dashboard_wishlist.html', menus=menus, videos=videos, is_media_page=True)
+    return render_template('owner_media.html', menus=menus, videos=videos)
 
 @bp.route('/media/delete/<int:id>', methods=['POST'])
 @owner_required
