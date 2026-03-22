@@ -114,7 +114,11 @@
                             <span>0</span></a>
                     </li>
                     <li>
-                        <a href="{{ url_for('auth.profile') }}"><i class="fas fa-user"></i></a>
+                        {% if current_user.role in ['owner', 'admin'] %}
+                            <a href="{{ url_for('owner.dashboard') }}" title="Owner Dashboard"><i class="fas fa-tachometer-alt"></i></a>
+                            {% else %}
+                            <a href="{{ url_for('auth.profile') }}"><i class="fas fa-user"></i></a>
+                            {% endif %}
                     </li>
                 </ul>
             </div>

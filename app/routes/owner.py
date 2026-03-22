@@ -85,7 +85,7 @@ def dashboard():
     top_dishes_labels = [d[0] for d in top_dishes_query]
     top_dishes_data = [d[1] for d in top_dishes_query]
     
-    return render_template('dashboard.html', 
+    return render_template('owner_dashboard.html', 
         restaurant=restaurant, 
         dishes_count=dishes_count, 
         recent_orders=recent_orders,

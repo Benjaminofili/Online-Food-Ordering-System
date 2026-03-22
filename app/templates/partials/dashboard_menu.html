@@ -15,6 +15,7 @@
         <li><a class="ajax-link {{ 'active' if request.endpoint == 'customer.view_wishlist' else '' }}" href="{{ url_for('customer.view_wishlist') }}"><span><i class="far fa-heart"></i></span> Wishlist</a></li>
         <li><a class="ajax-link {{ 'active' if request.endpoint == 'customer.my_orders' else '' }}" href="{{ url_for('customer.my_orders') }}"><span><i class="fas fa-bags-shopping"></i></span> Orders</a></li>
         {% elif current_user.role == 'owner' %}
+        <li><a href="{{ url_for('owner.dashboard') }}" style="color: #ff7c08; background-color: rgba(255,124,8,0.1); border-radius: 5px;"><span><i class="fas fa-tachometer-alt"></i></span> <strong>Admin Backend</strong></a></li>
         <li><a class="ajax-link {{ 'active' if request.endpoint == 'owner.dishes' else '' }}" href="{{ url_for('owner.dishes') }}"><span><i class="fas fa-utensils"></i></span> My Dishes</a></li>
         <li><a class="ajax-link {{ 'active' if request.endpoint == 'owner.orders' else '' }}" href="{{ url_for('owner.orders') }}"><span><i class="fas fa-bags-shopping"></i></span> Orders</a></li>
         <li><a class="ajax-link {{ 'active' if request.endpoint == 'owner.coupons' else '' }}" href="{{ url_for('owner.coupons') }}"><span><i class="fas fa-ticket-alt"></i></span> Coupons</a></li>
