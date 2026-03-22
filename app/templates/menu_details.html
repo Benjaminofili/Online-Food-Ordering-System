@@ -134,20 +134,41 @@
     <!--=============================
         BREADCRUMB START
     ==============================-->
-    <section class="page_breadcrumb" style="background: url('{{ url_for('static', filename='regfood/images/counter_bg.jpg') }}');">
+    <section class="page_breadcrumb d-print-none" style="background: url('{{ url_for('static', filename='regfood/images/counter_bg.jpg') }}');">
         <div class="breadcrumb_overlay">
             <div class="container">
                 <div class="breadcrumb_text">
-                    <h1>{{ dish.name }}</h1>
+                    <h1>{{ dish.name if dish else restaurant.name }}</h1>
                     <ul>
                         <li><a href="{{ url_for('customer.dashboard') }}">home</a></li>
                         <li><a href="{{ url_for('customer.global_menu') }}">menu</a></li>
-                        <li><a href="#">{{ dish.name }}</a></li>
+                        <li><a href="#">{{ dish.name if dish else restaurant.name }}</a></li>
                     </ul>
                 </div>
             </div>
         </div>
     </section>
+    
+    <style media="print">
+        .topbar, .main_menu, .page_breadcrumb, .footer, footer, .scroll_btn, 
+        .d-print-none, .cart_popup, #navBackdrop, #navOffcanvas {
+            display: none !important;
+        }
+        body {
+            background-color: white !important;
+            color: black !important;
+        }
+        .menu_details {
+            margin-top: 0 !important;
+        }
+        .related_menu h2, .details_button_area, .add_to_cart {
+            display: none !important;
+        }
+    </style>
+    
+    <div class="container mt-4 d-print-none text-right">
+        <!-- Moved Digital Menu to Tabs -->
+    </div>
     <!--=============================
         BREADCRUMB END
     ==============================-->
@@ -157,25 +178,16 @@
         MENU DETAILS START
     ==============================-->
     <section class="menu_details mt_100 xs_mt_75 mb_95 xs_mb_65">
+        <div class="container text-center d-none d-print-block mb-4">
+            <h1 style="color: black;">{{ restaurant.name }} - Menu</h1>
+        </div>
         <div class="container">
+            {% if dish %}
             <div class="row">
-                <div class="col-lg-5 col-md-6 wow fadeInUp" data-wow-duration="1s">
-                    <div class="exzoom hidden" id="exzoom">
-                        <div class="exzoom_img_box menu_details_images">
-                            <ul class='exzoom_img_ul'>
-                                <li><img class="zoom ing-fluid w-100" src="{{ dish.image_url or url_for('static', filename='regfood/images/menu2_img_1.jpg') }}" alt="{{ dish.name }}"></li>
-                            </ul>
-                        </div>
-                        <div class="exzoom_nav"></div>
-                        <p class="exzoom_btn">
-                            <a href="javascript:void(0);" class="exzoom_prev_btn"> <i class="far fa-chevron-left"></i>
-                            </a>
-                            <a href="javascript:void(0);" class="exzoom_next_btn"> <i class="far fa-chevron-right"></i>
-                            </a>
-                        </p>
+                    <div class="menu_details_images mb-4" style="border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.08);">
+                        <img class="img-fluid w-100" style="object-fit: cover; max-height: 500px;" src="{{ dish.image_url or url_for('static', filename='regfood/images/menu2_img_1.jpg') }}" alt="{{ dish.name }}">
                     </div>
-                </div>
-                <div class="col-lg-7 col-md-6 wow fadeInUp" data-wow-duration="1s">
+                <div class="col-lg-7 col-md-12 wow fadeInUp" data-wow-duration="1s">
                     <div class="menu_details_text">
                         <h2>{{ dish.name }}</h2>
                         <h3 class="price">${{ "%.2f"|format(dish.price) }}</h3>
@@ -286,6 +298,11 @@
                                     data-bs-target="#pills-contact" type="button" role="tab"
                                     aria-controls="pills-contact" aria-selected="false">Reviews</button>
                             </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="pills-menu-tab" data-bs-toggle="pill"
+                                    data-bs-target="#pills-menu" type="button" role="tab"
+                                    aria-controls="pills-menu" aria-selected="false">Digital Menu</button>
+                            </li>
                         </ul>
                         <div class="tab-content" id="pills-tabContent">
                             <div class="tab-pane fade show active" id="pills-home" role="tabpanel"
@@ -389,14 +406,33 @@
                                     </div>
                                 </div>
                             </div>
+                            <!-- Digital Menu Tab -->
+                            <div class="tab-pane fade" id="pills-menu" role="tabpanel" aria-labelledby="pills-menu-tab" tabindex="0">
+                                <div class="text-center py-5">
+                                    {% if menus and menus|length > 0 %}
+                                        <img src="{{ menus[0].url }}" alt="Digital Menu" class="img-fluid mb-4 shadow text-center" style="border-radius: 8px; border: 1px solid var(--admin-border); max-height: 800px; object-fit: contain;">
+                                        <div class="mt-4">
+                                            <a href="{{ menus[0].url }}" target="_blank" class="btn btn-warning btn-lg px-5 text-dark fw-bold" style="border-radius: 30px;"><i class="fas fa-file-download mr-2"></i>Download HD Menu</a>
+                                        </div>
+                                    {% else %}
+                                        <i class="fas fa-file-pdf fa-4x text-muted mb-4"></i>
+                                        <h4 style="color: var(--admin-heading);">Digital Menu Not Available</h4>
+                                        <p class="text-muted mb-4">This restaurant has not uploaded a digital copy of their menu, but you can still generate a print-friendly version of our web menu.</p>
+                                        <button onclick="window.print()" class="btn btn-secondary px-4 py-2" style="border-radius: 30px;"><i class="fas fa-print mr-2"></i>Print Web Menu</button>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="related_menu mt_90 xs_mt_60">
-                <h2>related item</h2>
-                <div class="row related_product_slider">
-                    {% for related in related_dishes %}
+            {% endif %}
+            
+            <div class="related_menu {{ 'mt_90 xs_mt_60' if dish else '' }}">
+                <h2 class="d-print-none">{{ 'Related Items' if dish else 'Menu Items' }}</h2>
+                <div class="row {{ 'related_product_slider' if dish else '' }}">
+                    {% set iterate_dishes = dishes if dishes else related_dishes %}
+                    {% for related in iterate_dishes %}
                     <div class="col-xl-3 col-sm-6 col-lg-4 wow fadeInUp" data-wow-duration="1s">
                         <div class="menu_item">
                             <div class="menu_item_img">

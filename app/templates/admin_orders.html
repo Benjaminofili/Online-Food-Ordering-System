@@ -1,0 +1,67 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Platform Orders{% endblock %}
+
+{% block content %}
+<h1 class="mt-4 mb-4">All Platform Orders</h1>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Master Order List</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="ordersTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Date</th>
+                        <th>Customer</th>
+                        <th>Restaurant</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td class="font-weight-bold">#{{ order.id }}</td>
+                        <td>{{ order.order_date.strftime('%Y-%m-%d %H:%M') if order.order_date else 'N/A' }}</td>
+                        <td>{{ order.user.name if order.user else 'Unknown' }}</td>
+                        <td>{{ order.restaurant.name if order.restaurant else 'Unknown' }}</td>
+                        <td class="font-weight-bold text-success">${{ "%.2f"|format(order.total_amount) }}</td>
+                        <td>
+                            {% if order.status == 'pending' %}
+                                <span class="badge badge-warning px-2 py-1 text-white">Pending</span>
+                            {% elif order.status == 'accepted' %}
+                                <span class="badge badge-info px-2 py-1 text-white">Accepted</span>
+                            {% elif order.status == 'completed' %}
+                                <span class="badge badge-success px-2 py-1 text-white">Completed</span>
+                            {% elif order.status == 'cancelled' %}
+                                <span class="badge badge-danger px-2 py-1 text-white">Cancelled</span>
+                            {% else %}
+                                <span class="badge badge-secondary px-2 py-1 text-white">{{ order.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">No orders found on the platform.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#ordersTable').DataTable({
+            "order": [[ 0, "desc" ]] // Sort by newest order ID first
+        });
+    });
+</script>
+{% endblock %}

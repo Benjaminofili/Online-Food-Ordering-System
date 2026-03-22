@@ -3,115 +3,134 @@
 {% block title %}RegFood || Cart View{% endblock %}
 
 {% block content %}
-    <!--=============================
+<!--=============================
         BREADCRUMB START
     ==============================-->
-    <section class="page_breadcrumb" style="background: url('{{ url_for('static', filename='regfood/images/counter_bg.jpg') }}');">
-        <div class="breadcrumb_overlay">
-            <div class="container">
-                <div class="breadcrumb_text">
-                    <h1>cart view</h1>
-                    <ul>
-                        <li><a href="{{ url_for('customer.dashboard') }}">home</a></li>
-                        <li><a href="{{ url_for('customer.view_cart') }}">cart view</a></li>
-                    </ul>
-                </div>
+<section class="page_breadcrumb"
+    style="background: url('{{ url_for('static', filename='regfood/images/counter_bg.jpg') }}');">
+    <div class="breadcrumb_overlay">
+        <div class="container">
+            <div class="breadcrumb_text">
+                <h1>cart view</h1>
+                <ul>
+                    <li><a href="{{ url_for('customer.dashboard') }}">home</a></li>
+                    <li><a href="{{ url_for('customer.view_cart') }}">cart view</a></li>
+                </ul>
             </div>
         </div>
-    </section>
-    <!--=============================
+    </div>
+</section>
+<!--=============================
         BREADCRUMB END
     ==============================-->
 
 
-    <!--============================
+<!--============================
         CART VIEW START
     ==============================-->
-    <section class="cart_view mt_100 xs_mt_70 mb_100 xs_mb_70">
-        <div class="container">
-            <div class="row">
-                <div class="{% if cart_items %}col-xl-8 col-lg-8{% else %}col-lg-12{% endif %}">
-                    <div class="cart_list">
-                        {% if cart_items %}
-                        <div class="table-responsive">
-                            <table>
-                                <tbody>
-                                    <tr>
-                                        <th class="pro_img">item</th>
-                                        <th class="pro_name">description</th>
-                                        <th class="pro_status">price</th>
-                                        <th class="pro_select">quantity</th>
-                                        <th class="pro_tk">total</th>
-                                        <th class="pro_icon">action</th>
-                                    </tr>
-                                    {% for item in cart_items %}
-                                    <tr>
-                                        <td class="pro_img">
-                                            <img src="{{ item.dish.image_url or url_for('static', filename='regfood/images/cart_img_1.jpg') }}" alt="cart" class="img-fluid w-100">
-                                        </td>
-                                        <td class="pro_name">
-                                            <a href="{{ url_for('customer.dish_details', id=item.dish.id) }}">{{ item.dish.name }}</a>
-                                            <p>{{ item.dish.category.name if item.dish.category else "" }}</p>
-                                        </td>
-                                        <td class="pro_status">
-                                            <h6>${{ "%.2f"|format(item.dish.price) }}</h6>
-                                        </td>
-                                        <td class="pro_select">
-                                            <div class="quentity_btn">
-                                                <form action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='decrement') }}" method="POST" style="display:inline;">
-                                                    <button type="submit" class="btn btn-danger"><i class="fal fa-minus"></i></button>
-                                                </form>
-                                                <input type="text" value="{{ item.quantity }}" readonly>
-                                                <form action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='increment') }}" method="POST" style="display:inline;">
-                                                    <button type="submit" class="btn btn-success"><i class="fal fa-plus"></i></button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                        <td class="pro_tk">
-                                            <h6>${{ "%.2f"|format(item.dish.price * item.quantity) }}</h6>
-                                        </td>
-                                        <td class="pro_icon">
-                                            <form action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='remove') }}" method="POST">
-                                                <button type="submit" class="border-0 bg-transparent text-danger"><i class="far fa-times"></i></button>
+<section class="cart_view mt_100 xs_mt_70 mb_100 xs_mb_70">
+    <div class="container">
+        <div class="row">
+            <div class="col-xl-8 col-lg-8">
+                <div class="cart_list">
+                    <div class="table-responsive">
+                        <table>
+                            <tbody>
+                                <tr class="d-flex flex-wrap">
+                                    <th class="cart_img">item</th>
+                                    <th class="cart_text">description</th>
+                                    <th class="cart_price">price</th>
+                                    <th class="cart_quantity">quantity</th>
+                                    <th class="cart_total">total</th>
+                                    <th class="cart_icon">action</th>
+                                </tr>
+                                {% if cart_items %}
+                                {% for item in cart_items %}
+                                <tr class="d-flex flex-wrap">
+                                    <td class="cart_img">
+                                        <img src="{{ item.dish.image_url or url_for('static', filename='regfood/images/cart_img_1.jpg') }}"
+                                            alt="cart" class="img-fluid w-100">
+                                    </td>
+                                    <td class="cart_text">
+                                        <a href="{{ url_for('customer.dish_details', id=item.dish.id) }}">{{
+                                            item.dish.name }}</a>
+                                        <p>{{ item.dish.category.name if item.dish.category else "" }}</p>
+                                    </td>
+                                    <td class="cart_price">
+                                        <h6>${{ "%.2f"|format(item.dish.price) }}</h6>
+                                    </td>
+                                    <td class="cart_quantity">
+                                        <div class="quentity_btn">
+                                            <form
+                                                action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='decrement') }}"
+                                                method="POST" style="display:inline;">
+                                                <button type="submit" class="btn btn-danger"><i
+                                                        class="fal fa-minus"></i></button>
                                             </form>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                        <div class="empty_cart text-center py-5">
-                            <img src="{{ url_for('static', filename='regfood/images/empty_cart.png') }}" alt="empty cart" class="img-fluid mb-4" style="max-width: 250px;">
-                            <h4 class="mb-3">Your Cart is Empty</h4>
-                            <p class="text-muted mb-4">Looks like you haven't added anything to your cart yet.</p>
-                            <a href="{{ url_for('customer.global_menu') }}" class="common_btn">Browse Menu</a>
-                        </div>
-                        {% endif %}
+                                            <input type="text" value="{{ item.quantity }}" readonly>
+                                            <form
+                                                action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='increment') }}"
+                                                method="POST" style="display:inline;">
+                                                <button type="submit" class="btn btn-success"><i
+                                                        class="fal fa-plus"></i></button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                    <td class="cart_total">
+                                        <h6>${{ "%.2f"|format(item.dish.price * item.quantity) }}</h6>
+                                    </td>
+                                    <td class="cart_icon">
+                                        <form
+                                            action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='remove') }}"
+                                            method="POST">
+                                            <button type="submit" class="border-0 bg-transparent text-danger"><i
+                                                    class="far fa-times"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr class="d-flex flex-wrap shadow-none">
+                                    <td class="text-center w-100 py-5">
+                                        <div class="empty_cart">
+                                            <img src="{{ url_for('static', filename='regfood/images/empty_cart.png') }}"
+                                                alt="empty cart" class="img-fluid mb-4"
+                                                style="max-width: 200px; opacity: 0.6;">
+                                            <h4 class="mb-3">Your Cart is Empty</h4>
+                                            <p class="text-muted mb-4">Looks like you haven't added anything to your
+                                                cart yet.</p>
+                                            <a href="{{ url_for('customer.global_menu') }}" class="common_btn">Browse
+                                                Menu</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                {% if cart_items %}
-                <div class="col-xl-4 col-lg-4">
-                    <div id="sticky_sidebar" class="cart_list_footer_button">
-                        <div class="cart_list_footer_button_text">
-                            <h6>total cart</h6>
-                            <p>subtotal: <span>${{ "%.2f"|format(total) }}</span></p>
-                            <p>delivery: <span>$0.00</span></p>
-                            <p>discount: <span>${{ "%.2f"|format(discount_amount) }}</span></p>
-                            <p class="total"><span>total:</span> <span>${{ "%.2f"|format(final_total) }}</span></p>
-                            <form action="{{ url_for('customer.apply_coupon') }}" method="POST">
-                                <input type="text" name="coupon_code" placeholder="Coupon Code" value="{{ session.get('coupon_code', '') }}">
-                                <button type="submit" class="common_btn">apply</button>
-                            </form>
-                            <a class="common_btn" href="{{ url_for('customer.checkout') }}">checkout</a>
-                        </div>
+            </div>
+            <div class="col-xl-4 col-lg-4">
+                <div id="sticky_sidebar" class="cart_list_footer_button">
+                    <div class="cart_list_footer_button_text">
+                        <h6>total cart</h6>
+                        <p>subtotal: <span>${{ "%.2f"|format(total) }}</span></p>
+                        <p>delivery: <span>$0.00</span></p>
+                        <p>discount: <span>${{ "%.2f"|format(discount_amount) }}</span></p>
+                        <p class="total"><span>total:</span> <span>${{ "%.2f"|format(final_total) }}</span></p>
+                        <form action="{{ url_for('customer.apply_coupon') }}" method="POST">
+                            <input type="text" name="coupon_code" placeholder="Coupon Code"
+                                value="{{ session.get('coupon_code', '') }}">
+                            <button type="submit" class="common_btn">apply</button>
+                        </form>
+                        <a class="common_btn" href="{{ url_for('customer.checkout') }}">checkout</a>
                     </div>
                 </div>
-                {% endif %}
             </div>
         </div>
-    </section>
-    <!--============================
+    </div>
+</section>
+<!--============================
         CART VIEW END
     ==============================-->
 {% endblock %}

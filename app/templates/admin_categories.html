@@ -1,0 +1,80 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Manage Categories{% endblock %}
+
+{% block content %}
+<h1 class="mt-4 mb-4">Manage Categories</h1>
+
+<div class="row">
+    <!-- Add Category Form -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Add New Category</h6>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('admin.categories') }}" method="POST">
+                    <div class="form-group">
+                        <label for="name">Category Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required placeholder="e.g., Fast Food">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-plus mr-1"></i> Add Category
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories List -->
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Existing Categories</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="categoriesTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in categories %}
+                            <tr>
+                                <td>{{ category.id }}</td>
+                                <td class="font-weight-bold">{{ category.name }}</td>
+                                <td class="text-center">
+                                    <form action="{{ url_for('admin.delete_category', id=category.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this category?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Category">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">No categories found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#categoriesTable').DataTable({
+            "order": [[ 0, "desc" ]]
+        });
+    });
+</script>
+{% endblock %}

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <title>{% block title %}Owner Dashboard{% endblock %} - Reg Food</title>
+    <title>{% block title %}Admin Dashboard{% endblock %} - Reg Food</title>
 
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='regfood/images/favicon.png') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
@@ -318,8 +318,8 @@
 <body class="sb-nav-fixed">
     <!-- TOP NAVBAR -->
     <nav class="sb-topnav navbar navbar-expand navbar-dark">
-        <a class="navbar-brand pl-3" href="{{ url_for('owner.dashboard') }}">
-            <i class="fas fa-utensils mr-2" style="color: var(--admin-primary);"></i> Reg Food
+        <a class="navbar-brand pl-3" href="{{ url_for('admin.dashboard') }}">
+            <i class="fas fa-shield-alt mr-2" style="color: var(--admin-primary);"></i> Reg Food Admin
         </a>
         <button class="btn btn-link btn-sm order-1 order-lg-0" id="sidebarToggle" href="#" style="color: var(--admin-text);">
             <i class="fas fa-bars"></i>
@@ -347,7 +347,7 @@
                     <span class="d-none d-md-inline ml-1" style="color: var(--admin-text); font-size: 0.85rem;">{{ current_user.name }}</span>
                 </a>
                 <div class="dropdown-menu dropdown-menu-right shadow" aria-labelledby="userDropdown">
-                    <a class="dropdown-item" href="{{ url_for('owner.profile') }}"><i class="fas fa-user-edit mr-2" style="color: var(--admin-primary);"></i>Profile</a>
+                    <a class="dropdown-item" href="{{ url_for('admin.profile') }}"><i class="fas fa-id-badge mr-2" style="color: var(--admin-primary);"></i>Profile Settings</a>
                     <a class="dropdown-item" href="{{ url_for('index') }}" target="_blank"><i class="fas fa-store mr-2" style="color: var(--admin-primary);"></i>Live Store</a>
                     <div class="dropdown-divider"></div>
                     <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt mr-2"></i>Logout</a>
@@ -362,60 +362,42 @@
             <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
                 <div class="sb-sidenav-menu">
                     <div class="nav pt-2">
-                        <div class="sb-sidenav-menu-heading">Main</div>
+                        <div class="sb-sidenav-menu-heading">Main Overview</div>
 
-                        <a class="nav-link {% if request.endpoint == 'owner.dashboard' %}active{% endif %}" href="{{ url_for('owner.dashboard') }}">
+                        <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">
                             <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
-                            Dashboard
+                            Dashboard Analytic
                         </a>
 
-                        <a class="nav-link {% if request.endpoint == 'owner.orders' %}active{% endif %}" href="{{ url_for('owner.orders') }}">
+                        <div class="sb-sidenav-menu-heading mt-2">Entities</div>
+
+                        <a class="nav-link {% if request.endpoint in ['admin.customers', 'admin.customers_report'] %}active{% endif %}" href="{{ url_for('admin.customers_report') }}">
+                            <div class="sb-nav-link-icon"><i class="fas fa-users"></i></div>
+                            Customers
+                        </a>
+
+                        <a class="nav-link {% if request.endpoint in ['admin.restaurants', 'admin.restaurants_report'] %}active{% endif %}" href="{{ url_for('admin.restaurants_report') }}">
+                            <div class="sb-nav-link-icon"><i class="fas fa-store"></i></div>
+                            Restaurants
+                        </a>
+
+                        <a class="nav-link {% if request.endpoint in ['admin.all_orders'] %}active{% endif %}" href="{{ url_for('admin.all_orders') }}">
                             <div class="sb-nav-link-icon"><i class="fas fa-shopping-cart"></i></div>
-                            Orders
+                            All Orders
                         </a>
 
-                        <a class="nav-link {% if request.endpoint == 'owner.reviews' %}active{% endif %}" href="{{ url_for('owner.reviews') }}">
-                            <div class="sb-nav-link-icon"><i class="fas fa-star-half-alt"></i></div>
-                            Customer Reviews
+                        <div class="sb-sidenav-menu-heading mt-2">Food Types</div>
+                        
+                        <a class="nav-link {% if request.endpoint == 'admin.categories' %}active{% endif %}" href="{{ url_for('admin.categories') }}">
+                            <div class="sb-nav-link-icon"><i class="fas fa-list-alt"></i></div>
+                            Categories
                         </a>
 
-                        <a class="nav-link collapsed {% if request.endpoint in ['owner.dishes','owner.add_dish','owner.edit_dish'] %}active{% endif %}"
-                           href="#" data-toggle="collapse" data-target="#collapseDishes"
-                           aria-expanded="{{ 'true' if request.endpoint in ['owner.dishes','owner.add_dish','owner.edit_dish'] else 'false' }}"
-                           aria-controls="collapseDishes">
-                            <div class="sb-nav-link-icon"><i class="fas fa-hamburger"></i></div>
-                            Dishes
-                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
-                        </a>
-                        <div class="collapse {% if request.endpoint in ['owner.dishes','owner.add_dish','owner.edit_dish'] %}show{% endif %}"
-                             id="collapseDishes" aria-labelledby="headingOne" data-parent="#sidenavAccordion">
-                            <nav class="sb-sidenav-menu-nested nav">
-                                <a class="nav-link {% if request.endpoint == 'owner.dishes' %}active{% endif %}" href="{{ url_for('owner.dishes') }}">All Dishes</a>
-                                <a class="nav-link {% if request.endpoint == 'owner.add_dish' %}active{% endif %}" href="{{ url_for('owner.add_dish') }}">Add Dish</a>
-                            </nav>
-                        </div>
-
-                        <a class="nav-link {% if request.endpoint == 'owner.media' %}active{% endif %}" href="{{ url_for('owner.media') }}">
-                            <div class="sb-nav-link-icon"><i class="fas fa-images"></i></div>
-                            Media & Menus
+                        <a class="nav-link {% if request.endpoint == 'admin.food_types' %}active{% endif %}" href="{{ url_for('admin.food_types') }}">
+                            <div class="sb-nav-link-icon"><i class="fas fa-tags"></i></div>
+                            Food Tags
                         </a>
 
-                        <a class="nav-link {% if request.endpoint == 'owner.coupons' %}active{% endif %}" href="{{ url_for('owner.coupons') }}">
-                            <div class="sb-nav-link-icon"><i class="fas fa-ticket-alt"></i></div>
-                            Coupons
-                        </a>
-
-                        <div class="sb-sidenav-menu-heading mt-2">Account</div>
-
-                        <a class="nav-link {% if request.endpoint == 'owner.profile' %}active{% endif %}" href="{{ url_for('owner.profile') }}">
-                            <div class="sb-nav-link-icon"><i class="fas fa-user-circle"></i></div>
-                            My Profile
-                        </a>
-
-                        <a class="nav-link" href="{{ url_for('index') }}" target="_blank">
-                            <div class="sb-nav-link-icon"><i class="fas fa-external-link-alt"></i></div>
-                            View Live Store
-                        </a>
                     </div>
                 </div>
                 <div class="sb-sidenav-footer">
@@ -441,11 +423,7 @@
             <footer class="py-4 mt-auto">
                 <div class="container-fluid">
                     <div class="d-flex align-items-center justify-content-between small">
-                        <div>Copyright &copy; Reg Food 2026</div>
-                        <div>
-                            <a href="#">Privacy Policy</a> &middot;
-                            <a href="#">Terms &amp; Conditions</a>
-                        </div>
+                        <div>Copyright &copy; Reg Food Platform Admin 2026</div>
                     </div>
                 </div>
             </footer>

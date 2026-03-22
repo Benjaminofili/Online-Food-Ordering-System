@@ -1,0 +1,95 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Manage Restaurants{% endblock %}
+
+{% block content %}
+<h1 class="mt-4 mb-4">Platform Restaurants</h1>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Registered Restaurants Overview</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="restaurantsTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Restaurant Name</th>
+                        <th>Owner</th>
+                        <th>Rating</th>
+                        <th class="text-center">Dishes</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for restaurant in restaurants %}
+                    <tr>
+                        <td>{{ restaurant.id }}</td>
+                        <td class="font-weight-bold">{{ restaurant.name }}</td>
+                        <td>{{ restaurant.owner.name if restaurant.owner else 'Unknown' }}</td>
+                        <td>
+                            {% if restaurant.rating %}
+                                <i class="fas fa-star text-warning"></i> {{ "%.1f"|format(restaurant.rating) }}
+                            {% else %}
+                                <span class="text-muted">No rating</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge badge-info px-2 py-1">{{ restaurant.dishes|length }}</span>
+                        </td>
+                        <td class="text-center">
+                            <a href="{{ url_for('customer.restaurant', id=restaurant.id) }}" target="_blank" class="btn btn-sm btn-outline-primary" title="View Storefront">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">No restaurants found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- DataTables Buttons for PDF Export -->
+<script src="https://cdn.datatables.net/buttons/1.7.0/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.print.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        $('#restaurantsTable').DataTable({
+            "order": [[ 0, "asc" ]],
+            dom: '<"row"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    text: '<i class="fas fa-file-pdf mr-1"></i> Generate PDF Report',
+                    className: 'btn btn-danger btn-sm mb-3',
+                    title: 'System Restaurants Report - Reg Food',
+                    exportOptions: {
+                        columns: [0, 1, 2, 3, 4] // Ignore action column
+                    }
+                },
+                {
+                    extend: 'csvHtml5',
+                    text: '<i class="fas fa-file-csv mr-1"></i> CSV',
+                    className: 'btn btn-success btn-sm mb-3',
+                    exportOptions: {
+                        columns: [0, 1, 2, 3, 4]
+                    }
+                }
+            ]
+        });
+    });
+</script>
+{% endblock %}

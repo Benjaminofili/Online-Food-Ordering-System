@@ -293,6 +293,17 @@ def update_order(id):
         flash('Order status updated.', 'success')
     return redirect(url_for('owner.orders'))
 
+@bp.route('/reviews')
+@owner_required
+def reviews():
+    restaurant = get_restaurant()
+    if not restaurant:
+        return redirect(url_for('owner.profile'))
+        
+    reviews = Review.query.filter_by(restaurant_id=restaurant.id).order_by(Review.created_at.desc()).all()
+    avg_rating = sum(r.rating for r in reviews) / len(reviews) if reviews else 0
+    return render_template('owner_reviews.html', reviews=reviews, avg_rating=avg_rating, active_page='reviews')
+
 @bp.route('/coupons')
 @owner_required
 def coupons():

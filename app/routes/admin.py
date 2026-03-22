@@ -51,7 +51,7 @@ def dashboard():
     top_rests_labels = [r[0] for r in top_rests_query]
     top_rests_data = [float(r[1]) for r in top_rests_query]
 
-    return render_template('dashboard.html', 
+    return render_template('admin_dashboard.html', 
                            users_count=users_count, 
                            restaurants_count=restaurants_count, 
                            orders_count=orders_count,
@@ -73,7 +73,7 @@ def categories():
             flash('Category added.', 'success')
         return redirect(url_for('admin.categories'))
     categories = Category.query.all()
-    return render_template('dashboard_wishlist.html', categories=categories)
+    return render_template('admin_categories.html', categories=categories)
 
 @bp.route('/categories/delete/<int:id>', methods=['POST'])
 @admin_required
@@ -96,7 +96,7 @@ def food_types():
             flash('Food Type added.', 'success')
         return redirect(url_for('admin.food_types'))
     food_types = FoodType.query.all()
-    return render_template('dashboard_address.html', food_types=food_types)
+    return render_template('admin_food_types.html', food_types=food_types)
 
 @bp.route('/food-types/delete/<int:id>', methods=['POST'])
 @admin_required
@@ -107,20 +107,56 @@ def delete_food_type(id):
     flash('Food Type deleted.', 'success')
     return redirect(url_for('admin.food_types'))
 
+@bp.route('/food-types/approve/<int:id>', methods=['POST'])
+@admin_required
+def approve_food_type(id):
+    ft = db.session.get(FoodType, id)
+    if ft:
+        ft.is_approved = True
+        db.session.commit()
+        flash(f'Food type "{ft.name}" approved.', 'success')
+    return redirect(url_for('admin.food_types'))
+
+@bp.route('/profile', methods=['GET', 'POST'])
+@admin_required
+def profile():
+    if request.method == 'POST':
+        action = request.form.get('action')
+        if action == 'update_info':
+            current_user.name = request.form.get('name')
+            current_user.phone = request.form.get('phone')
+            current_user.address = request.form.get('address')
+            db.session.commit()
+            flash('Profile updated successfully.', 'success')
+        elif action == 'update_password':
+            current_password = request.form.get('current_password')
+            new_password = request.form.get('new_password')
+            confirm_password = request.form.get('confirm_password')
+            if not current_user.check_password(current_password):
+                flash('Current password is incorrect.', 'danger')
+            elif new_password != confirm_password:
+                flash('New passwords do not match.', 'danger')
+            else:
+                current_user.set_password(new_password)
+                db.session.commit()
+                flash('Password updated successfully.', 'success')
+        return redirect(url_for('admin.profile'))
+    return render_template('admin_profile.html')
+
 @bp.route('/reports/customers')
 @admin_required
 def customers_report():
     customers = User.query.filter_by(role='customer').all()
-    return render_template('dashboard_review.html', customers=customers)
+    return render_template('admin_customers.html', customers=customers)
 
 @bp.route('/reports/restaurants')
 @admin_required
 def restaurants_report():
     restaurants = Restaurant.query.all()
-    return render_template('dashboard_address_edit.html', restaurants=restaurants)
+    return render_template('admin_restaurants.html', restaurants=restaurants)
 
 @bp.route('/orders')
 @admin_required
 def all_orders():
     orders = Order.query.order_by(Order.order_date.desc()).all()
-    return render_template('dashboard_order.html', orders=orders)
+    return render_template('admin_orders.html', orders=orders)
