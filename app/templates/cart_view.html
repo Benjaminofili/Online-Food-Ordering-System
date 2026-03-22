@@ -1,136 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
+{% block title %}RegFood || Cart View{% endblock %}
 
-<!-- Mirrored from html.narzotech.com/regfood/cart_view.html by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 20 Mar 2026 16:08:05 GMT -->
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, target-densityDpi=device-dpi" />
-    <title>RegFood || Restaurant HTML Template</title>
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='regfood/images/favicon.png') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='regfood/css/all.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='regfood/css/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='regfood/css/slick.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='regfood/css/nice-select.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='regfood/css/custom_spacing.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='regfood/css/venobox.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='regfood/css/animate.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='regfood/css/jquery.exzoom.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='regfood/css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='regfood/css/responsive.css') }}">
-</head>
-
-<body>
-
-    <!--=============================
-        TOPBAR START
-    ==============================-->
-    <section class="topbar">
-        <div class="container">
-            <div class="row">
-                <div class="col-xl-6 col-sm-6 col-md-8">
-                    <ul class="topbar_info d-flex flex-wrap d-none d-sm-flex">
-                        <li><a href="mailto:example@gmail.com"><i class="fas fa-envelope"></i> examplemail@gmail.com</a>
-                        </li>
-                        <li class="d-none d-md-block"><a href="callto:123456789"><i class="fas fa-phone-alt"></i>
-                                +96487452145214</a></li>
-                    </ul>
-                </div>
-                <div class="col-xl-6 col-sm-6 col-md-4">
-                    <ul class="topbar_icon d-flex flex-wrap">
-                        <li><a href="#"><i class="fab fa-facebook-f"></i></a> </li>
-                        <li><a href="#"><i class="fab fa-twitter"></i></a> </li>
-                        <li><a href="#"><i class="fab fa-linkedin-in"></i></a> </li>
-                        <li><a href="#"><i class="fab fa-behance"></i></a> </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </section>
-    <!--=============================
-        TOPBAR END
-    ==============================-->
-
-
-    <!--=============================
-        MENU START
-    ==============================-->
-    <nav class="navbar navbar-expand-lg main_menu">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('customer.dashboard') }}">
-                <img src="{{ url_for('static', filename='regfood/images/logo.png') }}" alt="RegFood" class="img-fluid">
-            </a>
-                        <button class="oc-toggler" id="ocToggleBtn" aria-label="Open menu"><i class="far fa-bars"></i></button>
-<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <i class="far fa-bars menu_icon_bar"></i>
-                <i class="far fa-times close_icon_close"></i>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav m-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="{{ url_for('customer.dashboard') }}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('customer.about') }}">about</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('customer.global_menu') }}">menu</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">pages <i class="far fa-angle-down"></i></a>
-                        <ul class="droap_menu">
-                            <li><a href="{{ url_for('customer.global_menu') }}">menu details</a></li>
-                            <li><a href="{{ url_for('customer.view_cart') }}">cart view</a></li>
-                            <li><a href="{{ url_for('customer.checkout') }}">checkout</a></li>
-                            <li><a href="{{ url_for('customer.checkout') }}">payment</a></li>
-                            <li><a href="{{ url_for('customer.testimonial') }}">testimonial</a></li>
-                            <li><a href="/trigger-404-error">404/Error</a></li>
-                            <li><a href="{{ url_for('customer.faq') }}">FAQs</a></li>
-                            <li><a href="{{ url_for('auth.login') }}">sign in</a></li>
-                            <li><a href="{{ url_for('auth.register') }}">sign up</a></li>
-                            <li><a href="{{ url_for('auth.forgot_password') }}">forgot password</a></li>
-                            <li><a href="{{ url_for('customer.privacy_policy') }}">privacy policy</a></li>
-                            <li><a href="{{ url_for('customer.terms_condition') }}">terms and condition</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('customer.contact') }}">contact</a>
-                    </li>
-                </ul>
-                <ul class="menu_icon d-flex flex-wrap">
-                    <li>
-                        <a href="{{ url_for('customer.view_wishlist') }}"><i class="fal fa-heart"></i></a>
-                    </li>
-                    <li>
-                        <a class="cart_icon" href="{{ url_for('customer.view_cart') }}"><i class="fas fa-shopping-basket"></i>
-                            <span>{{ session.get('cart', {}).values()|sum if session.get('cart') else 0 }}</span></a>
-                    </li>
-                    <li>
-                        {% if current_user.is_authenticated %}
-                            {% if current_user.role in ['owner', 'admin'] %}
-                            <a href="{{ url_for('owner.dashboard') }}" title="Owner Dashboard"><i class="fas fa-tachometer-alt"></i></a>
-                            {% else %}
-                            {% if current_user.role in ['owner', 'admin'] %}
-                            <a href="{{ url_for('owner.dashboard') }}" title="Owner Dashboard"><i class="fas fa-tachometer-alt"></i></a>
-                            {% else %}
-                            <a href="{{ url_for('auth.profile') }}"><i class="fas fa-user"></i></a>
-                            {% endif %}
-                            {% endif %}
-                        {% else %}
-                        <a href="{{ url_for('auth.login') }}"><i class="fas fa-user"></i></a>
-                        {% endif %}
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-    <!--=============================
-        MENU END
-    ==============================-->
-
-
+{% block content %}
     <!--=============================
         BREADCRUMB START
     ==============================-->
@@ -151,7 +23,6 @@
         BREADCRUMB END
     ==============================-->
 
-    {% include 'partials/flash_messages.html' %}
 
     <!--============================
         CART VIEW START
@@ -159,76 +30,48 @@
     <section class="cart_view mt_100 xs_mt_70 mb_100 xs_mb_70">
         <div class="container">
             <div class="row">
-                <div class="col-lg-12 wow fadeInUp" data-wow-duration="1s">
+                <div class="{% if cart_items %}col-xl-8 col-lg-8{% else %}col-lg-12{% endif %}">
                     <div class="cart_list">
                         {% if cart_items %}
                         <div class="table-responsive">
                             <table>
                                 <tbody>
                                     <tr>
-                                        <th class="pro_img">
-                                            Image
-                                        </th>
-
-                                        <th class="pro_name">
-                                            details
-                                        </th>
-
-                                        <th class="pro_status">
-                                            price
-                                        </th>
-
-                                        <th class="pro_select">
-                                            quantity
-                                        </th>
-
-                                        <th class="pro_tk">
-                                            total
-                                        </th>
-
-                                        <th class="pro_icon">
-                                            <form action="{{ url_for('customer.clear_cart') }}" method="POST">
-                                                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                                <button type="submit" class="clear_all border-0 bg-transparent" style="color:var(--colorWhite);">clear all</button>
-                                            </form>
-                                        </th>
+                                        <th class="pro_img">item</th>
+                                        <th class="pro_name">description</th>
+                                        <th class="pro_status">price</th>
+                                        <th class="pro_select">quantity</th>
+                                        <th class="pro_tk">total</th>
+                                        <th class="pro_icon">action</th>
                                     </tr>
                                     {% for item in cart_items %}
                                     <tr>
                                         <td class="pro_img">
-                                            <img src="{{ item.dish.image_url or url_for('static', filename='regfood/images/menu2_img_1.jpg') }}" alt="{{ item.dish.name }}" class="img-fluid w-100">
+                                            <img src="{{ item.dish.image_url or url_for('static', filename='regfood/images/cart_img_1.jpg') }}" alt="cart" class="img-fluid w-100">
                                         </td>
-
                                         <td class="pro_name">
                                             <a href="{{ url_for('customer.dish_details', id=item.dish.id) }}">{{ item.dish.name }}</a>
-                                            {% if item.dish.category %}<span>{{ item.dish.category.name }}</span>{% endif %}
+                                            <p>{{ item.dish.category.name if item.dish.category else "" }}</p>
                                         </td>
-
                                         <td class="pro_status">
                                             <h6>${{ "%.2f"|format(item.dish.price) }}</h6>
                                         </td>
-
                                         <td class="pro_select">
                                             <div class="quentity_btn">
                                                 <form action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='decrement') }}" method="POST" style="display:inline;">
-                                                    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                     <button type="submit" class="btn btn-danger"><i class="fal fa-minus"></i></button>
                                                 </form>
                                                 <input type="text" value="{{ item.quantity }}" readonly>
                                                 <form action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='increment') }}" method="POST" style="display:inline;">
-                                                    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                     <button type="submit" class="btn btn-success"><i class="fal fa-plus"></i></button>
                                                 </form>
                                             </div>
                                         </td>
-
                                         <td class="pro_tk">
-                                            <h6>${{ "%.2f"|format(item.subtotal) }}</h6>
+                                            <h6>${{ "%.2f"|format(item.dish.price * item.quantity) }}</h6>
                                         </td>
-
                                         <td class="pro_icon">
                                             <form action="{{ url_for('customer.update_cart', dish_id=item.dish.id, action='remove') }}" method="POST">
-                                                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                 <button type="submit" class="border-0 bg-transparent text-danger"><i class="far fa-times"></i></button>
                                             </form>
                                         </td>
@@ -238,376 +81,37 @@
                             </table>
                         </div>
                         {% else %}
-                        <div class="text-center p-5 bg-white shadow-sm rounded">
-                            <img src="{{ url_for('static', filename='regfood/images/cart_offer_img.jpg') }}" alt="Empty Cart" class="img-fluid mb-4" style="max-height: 200px; opacity: 0.8;">
-                            <h3 class="fw-bold">Your Cart is Currently Empty</h3>
-                            <p class="text-muted mb-4">You haven't added any delicious food yet. Start exploring our menu and find something you love!</p>
-                            <a href="{{ url_for('customer.global_menu') }}" class="common_btn px-5 py-3">Browse Our Menu</a>
+                        <div class="empty_cart text-center py-5">
+                            <img src="{{ url_for('static', filename='regfood/images/empty_cart.png') }}" alt="empty cart" class="img-fluid mb-4" style="max-width: 250px;">
+                            <h4 class="mb-3">Your Cart is Empty</h4>
+                            <p class="text-muted mb-4">Looks like you haven't added anything to your cart yet.</p>
+                            <a href="{{ url_for('customer.global_menu') }}" class="common_btn">Browse Menu</a>
                         </div>
                         {% endif %}
                     </div>
                 </div>
-                <div class="col-lg-12 wow fadeInUp" data-wow-duration="1s">
-                    {% if cart_items %}
-                    <div class="cart_list_footer_button mt_50">
-                        <div class="row">
-                            <div class="col-xl-7 col-md-6">
-                                <div class="cart_list_footer_button_img">
-                                    <img src="{{ url_for('static', filename='regfood/images/cart_offer_img.jpg') }}" alt="cart offer" class="img-fluid w-100">
-                                </div>
-                            </div>
-                            <div class="col-xl-5 col-md-6">
-                                <div class="cart_list_footer_button_text">
-                                    <h6>total cart ({{ cart_items|length }})</h6>
-                                    <p>subtotal: <span>${{ "%.2f"|format(total) }}</span></p>
-                                    <p>delivery: <span>$0.00</span></p>
-                                    {% if discount_amount > 0 %}
-                                    <p>discount: <span>-${{ "%.2f"|format(discount_amount) }}</span></p>
-                                    {% endif %}
-                                    <p class="total"><span>total:</span> <span>${{ "%.2f"|format(final_total) }}</span></p>
-                                    <form method="POST" action="{{ url_for('customer.apply_coupon') }}">
-                                        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                        <input type="text" name="coupon_code" placeholder="Coupon Code" value="{{ applied_coupon.code if applied_coupon else '' }}">
-                                        <button type="submit">apply</button>
-                                    </form>
-                                    <a class="common_btn" href="{{ url_for('customer.checkout') }}">checkout</a>
-                                </div>
-                            </div>
+                {% if cart_items %}
+                <div class="col-xl-4 col-lg-4">
+                    <div id="sticky_sidebar" class="cart_list_footer_button">
+                        <div class="cart_list_footer_button_text">
+                            <h6>total cart</h6>
+                            <p>subtotal: <span>${{ "%.2f"|format(total) }}</span></p>
+                            <p>delivery: <span>$0.00</span></p>
+                            <p>discount: <span>${{ "%.2f"|format(discount_amount) }}</span></p>
+                            <p class="total"><span>total:</span> <span>${{ "%.2f"|format(final_total) }}</span></p>
+                            <form action="{{ url_for('customer.apply_coupon') }}" method="POST">
+                                <input type="text" name="coupon_code" placeholder="Coupon Code" value="{{ session.get('coupon_code', '') }}">
+                                <button type="submit" class="common_btn">apply</button>
+                            </form>
+                            <a class="common_btn" href="{{ url_for('customer.checkout') }}">checkout</a>
                         </div>
                     </div>
-                    {% endif %}
                 </div>
+                {% endif %}
             </div>
         </div>
     </section>
     <!--============================
         CART VIEW END
     ==============================-->
-
-
-    <!--=============================
-        FOOTER START
-    ==============================-->
-    <footer style="background: url('{{ url_for('static', filename='regfood/images/footer_bg.jpg') }}');">
-        <div class="footer_overlay pt_100 xs_pt_70 pb_100 xs_pb_20">
-            <div class="container wow fadeInUp" data-wow-duration="1s">
-                <div class="row justify-content-between">
-                    <div class="col-xxl-4 col-lg-4 col-sm-9 col-md-7">
-                        <div class="footer_content">
-                            <a class="footer_logo" href="{{ url_for('customer.profile') }}">
-                                <img src="{{ url_for('static', filename='regfood/images/footer_logo.png') }}" alt="RegFood" class="img-fluid w-100">
-                            </a>
-                            <span>Lorem ipsum dolor sit amet consectetur adipisicing elit. Soluta facere delectus qui
-                                placeat inventore consectetur repellendus optio debitis.</span>
-                            <ul class="social_link d-flex flex-wrap">
-                                <li><a href="#"><i class="fab fa-facebook-f"></i></a></li>
-                                <li><a href="#"><i class="fab fa-linkedin-in"></i></a></li>
-                                <li><a href="#"><i class="fab fa-twitter"></i></a></li>
-                                <li><a href="#"><i class="fab fa-behance"></i></a></li>
-                                <li><a href="#"><i class="fab fa-instagram"></i></a></li>
-                                <li><a href="#"><i class="fab fa-google-plus-g"></i></a></li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="col-xxl-2 col-lg-2 col-sm-5 col-md-5">
-                        <div class="footer_content">
-                            <h3>Short Link</h3>
-                            <ul>
-                                <li><a href="{{ url_for('customer.dashboard') }}">Home</a></li>
-                                <li><a href="{{ url_for('customer.about') }}">About Us</a></li>
-                                <li><a href="{{ url_for('customer.contact') }}">Contact Us</a></li>
-                                <li><a href="#">Our Service</a></li>
-                                <li><a href="#">gallery</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="col-xxl-2 col-lg-2 col-sm-6 col-md-5 order-md-4">
-                        <div class="footer_content">
-                            <h3>Help Link</h3>
-                            <ul>
-                                <li><a href="{{ url_for('customer.terms_condition') }}">Terms & Conditions</a></li>
-                                <li><a href="{{ url_for('customer.privacy_policy') }}">Privacy Policy</a></li>
-                                <li><a href="#">Refund Policy</a></li>
-                                <li><a href="{{ url_for('customer.faq') }}">FAQ</a></li>
-                                <li><a href="{{ url_for('customer.contact') }}">contact</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="col-xxl-3 col-lg-4 col-sm-9 col-md-7 order-lg-4">
-                        <div class="footer_content">
-                            <h3>contact us</h3>
-                            <p class="info"><i class="fas fa-phone-alt"></i> +44 (0) 20 9994 7740</p>
-                            <p class="info"><i class="fas fa-envelope"></i> themefaxbd@gmail.com</p>
-                            <p class="info"><i class="far fa-map-marker-alt"></i> Blackwell Street,Dry Creek,Alaska</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="footer_bottom d-flex flex-wrap">
-            <div class="container">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="footer_bottom_text">
-                            <p>Copyright ©<b> RegFood</b> 2023. All Rights Reserved</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
-    <!--=============================
-        FOOTER END
-    ==============================-->
-
-
-    <!--=============================
-        SCROLL BUTTON START
-    ==============================-->
-    <div class="scroll_btn"><i class="fas fa-hand-pointer"></i></div>
-    <!--=============================
-        SCROLL BUTTON END 
-    ==============================-->
-
-
-    <!--jquery library js-->
-    <script src="{{ url_for('static', filename='regfood/js/jquery-3.6.0.min.js') }}"></script>
-    <!--bootstrap js-->
-    <script src="{{ url_for('static', filename='regfood/js/bootstrap.bundle.min.js') }}"></script>
-    <!--font-awesome js-->
-    <script src="{{ url_for('static', filename='regfood/js/Font-Awesome.js') }}"></script>
-    <!-- slick slider -->
-    <script src="{{ url_for('static', filename='regfood/js/slick.min.js') }}"></script>
-    <!-- isotop js -->
-    <script src="{{ url_for('static', filename='regfood/js/isotope.pkgd.min.js') }}"></script>
-    <!-- counter up js -->
-    <script src="{{ url_for('static', filename='regfood/js/jquery.waypoints.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='regfood/js/jquery.countup.min.js') }}"></script>
-    <!-- nice select js -->
-    <script src="{{ url_for('static', filename='regfood/js/jquery.nice-select.min.js') }}"></script>
-    <!-- venobox js -->
-    <script src="{{ url_for('static', filename='regfood/js/venobox.min.js') }}"></script>
-    <!-- sticky sidebar js -->
-    <script src="{{ url_for('static', filename='regfood/js/sticky_sidebar.js') }}"></script>
-    <!-- wow js -->
-    <script src="{{ url_for('static', filename='regfood/js/wow.min.js') }}"></script>
-    <!-- ex zoom js -->
-    <script src="{{ url_for('static', filename='regfood/js/jquery.exzoom.js') }}"></script>
-
-    <!--main/custom js-->
-    <script src="{{ url_for('static', filename='regfood/js/main.js') }}"></script>
-
-
-    <!-- ===== OFFCANVAS NAV BACKDROP ===== -->
-    <div id="navBackdrop"></div>
-
-    <!-- ===== OFFCANVAS NAV PANEL ===== -->
-    <div id="navOffcanvas">
-        <div class="oc-pattern"></div>
-        <div class="oc-header">
-            <a href="{{ url_for('customer.dashboard') }}" class="oc-logo">
-                <img src="{{ url_for('static', filename='regfood/images/logo.png') }}" alt="RegFood">
-            </a>
-            <button id="navOffcanvasClose" aria-label="Close menu">
-                <i class="far fa-times"></i>
-            </button>
-        </div>
-        <nav class="oc-nav">
-            <a href="{{ url_for('customer.dashboard') }}" class="oc-link"><span>Home</span> <i class="far fa-angle-right"></i></a>
-            <a href="{{ url_for('customer.about') }}" class="oc-link"><span>About</span> <i class="far fa-angle-right"></i></a>
-            <a href="{{ url_for('customer.global_menu') }}" class="oc-link"><span>Menu</span> <i class="far fa-angle-right"></i></a>
-            <a href="{{ url_for('customer.contact') }}" class="oc-link"><span>Contact</span> <i class="far fa-angle-right"></i></a>
-        </nav>
-        <div class="oc-divider"></div>
-        <div class="oc-icons">
-            <a href="{{ url_for('customer.view_wishlist') }}" class="oc-icon-btn" title="Wishlist">
-                <div class="icon-wrap"><i class="fal fa-heart"></i></div> Wishlist
-            </a>
-            <a href="{{ url_for('customer.view_cart') }}" class="oc-icon-btn" title="Cart">
-                <div class="icon-wrap"><i class="fas fa-shopping-basket"></i></div> Cart
-            </a>
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('auth.profile') }}" class="oc-icon-btn" title="Profile">
-                <div class="icon-wrap"><i class="fas fa-user"></i></div> My Profile
-            </a>
-            <a href="{{ url_for('auth.logout') }}" class="oc-icon-btn oc-logout" title="Logout">
-                <div class="icon-wrap"><i class="fas fa-sign-out-alt"></i></div> Logout
-            </a>
-            {% else %}
-            <a href="{{ url_for('auth.login') }}" class="oc-icon-btn" title="Sign In">
-                <div class="icon-wrap"><i class="fas fa-user"></i></div> Sign In
-            </a>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- ===== OFFCANVAS STYLES ===== -->
-    <style>
-    /* --- Navbar solid background fix --- */
-    .main_menu { background: var(--colorWhite) !important; box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
-
-    /* --- Offcanvas hamburger button (mobile only) --- */
-    .oc-toggler {
-        display: none;
-        width: 42px; height: 42px;
-        border: none; border-radius: 8px;
-        background: var(--colorPrimary);
-        color: var(--colorWhite); font-size: 18px;
-        cursor: pointer; align-items: center;
-        justify-content: center; margin-right: 12px;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 4px 15px rgba(255, 124, 8, 0.4);
-    }
-    .oc-toggler:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 124, 8, 0.6); }
-
-    /* --- Backdrop --- */
-    #navBackdrop {
-        display: none; position: fixed; inset: 0;
-        background: rgba(35, 31, 64, 0.6);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-        z-index: 9998;
-        transition: opacity 0.3s;
-    }
-    #navBackdrop.open { display: block; }
-
-    /* --- Panel --- */
-    #navOffcanvas {
-        position: fixed; top: 0; right: -340px; bottom: 0;
-        width: 320px;
-        background: var(--colorBlack);
-        z-index: 9999;
-        padding: 0;
-        display: flex; flex-direction: column;
-        overflow-y: auto;
-        overflow-x: hidden;
-        transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        box-shadow: -15px 0 40px rgba(0,0,0,0.4);
-    }
-    #navOffcanvas.open { right: 0; }
-    
-    .oc-pattern {
-        position: absolute; top: -50px; right: -50px;
-        width: 250px; height: 250px;
-        background: url({{ url_for('static', filename='regfood/images/banner_img_shapes.png') }}) no-repeat center center;
-        background-size: contain;
-        opacity: 0.05;
-        animation: rotate linear 100s infinite;
-        z-index: 0; pointer-events: none;
-    }
-
-    body.oc-open { overflow: hidden; }
-
-    /* --- Offcanvas Header --- */
-    .oc-header {
-        display: flex; align-items: center;
-        justify-content: space-between;
-        padding: 25px 30px;
-        position: relative; z-index: 1;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-    .oc-logo img { height: 40px; filter: brightness(0) invert(1); }
-    #navOffcanvasClose {
-        background: rgba(255,124,8,0.1); border: 1px solid rgba(255,124,8,0.2);
-        width: 38px; height: 38px; border-radius: 50%;
-        color: var(--colorPrimary); font-size: 16px; cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        transition: all 0.3s ease;
-    }
-    #navOffcanvasClose:hover { background: var(--colorPrimary); color: var(--colorWhite); transform: scale(1.1) rotate(90deg); }
-
-    /* --- Nav links --- */
-    .oc-nav { display: flex; flex-direction: column; padding: 25px 30px; position: relative; z-index: 1; }
-    .oc-link {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 15px 0;
-        color: rgba(255,255,255,0.95) !important;
-        font-size: 17px; font-weight: 600; font-family: var(--headingFont);
-        text-transform: capitalize; letter-spacing: 0.5px;
-        text-decoration: none !important;
-        border-bottom: 1px dashed rgba(255,255,255,0.1);
-        transition: all 0.3s ease;
-        position: relative;
-    }
-    .oc-link::before {
-        content: ''; position: absolute; left: -15px; top: 50%; transform: translateY(-50%);
-        width: 0; height: 2px; background: var(--colorPrimary);
-        transition: all 0.3s ease; opacity: 0;
-    }
-    .oc-link:hover { color: var(--colorWhite) !important; border-bottom-color: rgba(255,255,255,0.3); padding-left: 15px; }
-    .oc-link:hover::before { width: 20px; opacity: 1; left: -25px; }
-    .oc-link i { font-size: 14px; opacity: 0; transition: all 0.3s; transform: translateX(-10px); }
-    .oc-link:hover i { opacity: 1; transform: translateX(0); color: var(--colorPrimary); }
-
-    /* --- Divider --- */
-    .oc-divider {
-        height: 5px; width: 40px; border-radius: 5px; background: var(--colorPrimary);
-        margin: 10px 30px 20px; position: relative; z-index: 1;
-    }
-
-    /* --- Icon buttons --- */
-    .oc-icons { display: flex; flex-direction: column; padding: 0 30px 40px; position: relative; z-index: 1; gap: 8px; }
-    .oc-icon-btn {
-        display: flex; align-items: center; gap: 15px;
-        padding: 12px 15px; border-radius: 10px;
-        color: rgba(255,255,255,0.85) !important;
-        font-size: 15px; font-weight: 500; font-family: var(--paraFont);
-        text-decoration: none !important;
-        transition: all 0.3s ease;
-        background: transparent;
-    }
-    .icon-wrap {
-        width: 36px; height: 36px; border-radius: 50%;
-        background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.9);
-        display: flex; align-items: center; justify-content: center;
-        transition: all 0.3s ease;
-    }
-    .oc-icon-btn i { font-size: 14px; }
-    .oc-icon-btn:hover { color: var(--colorWhite) !important; background: rgba(255,255,255,0.03); transform: translateX(5px); }
-    .oc-icon-btn:hover .icon-wrap { background: var(--colorPrimary); color: var(--colorWhite); box-shadow: 0 4px 10px rgba(255, 124, 8, 0.3); }
-    
-    .oc-logout:hover .icon-wrap { background: var(--colorRed); box-shadow: 0 4px 10px rgba(235, 0, 41, 0.3); }
-
-    /* --- Responsive: show toggler, hide Bootstrap nav collapse on mobile --- */
-    @media (max-width: 991.99px) {
-        .oc-toggler { display: flex !important; }
-        .main_menu .navbar-toggler { display: none !important; }
-        .main_menu #navbarNav { display: none !important; }
-    }
-    </style>
-
-    <!-- ===== OFFCANVAS SCRIPT ===== -->
-    <script>
-    (function () {
-        var panel    = document.getElementById('navOffcanvas');
-        var backdrop = document.getElementById('navBackdrop');
-        var toggle   = document.getElementById('ocToggleBtn');
-        var closeBtn = document.getElementById('navOffcanvasClose');
-        if (!panel) return;
-
-        function open() {
-            panel.classList.add('open');
-            backdrop.classList.add('open');
-            document.body.classList.add('oc-open');
-        }
-        function close() {
-            panel.classList.remove('open');
-            backdrop.classList.remove('open');
-            document.body.classList.remove('oc-open');
-        }
-
-        if (toggle)   toggle.addEventListener('click', open);
-        if (closeBtn) closeBtn.addEventListener('click', close);
-        if (backdrop) backdrop.addEventListener('click', close);
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') close();
-        });
-    })();
-    </script>
-
-
-</body>
-
-
-<!-- Mirrored from html.narzotech.com/regfood/cart_view.html by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 20 Mar 2026 16:08:06 GMT -->
-</html>
+{% endblock %}

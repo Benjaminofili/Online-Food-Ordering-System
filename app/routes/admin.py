@@ -78,7 +78,7 @@ def categories():
 @bp.route('/categories/delete/<int:id>', methods=['POST'])
 @admin_required
 def delete_category(id):
-    cat = Category.query.get_or_404(id)
+    cat = db.get_or_404(Category, id)
     db.session.delete(cat)
     db.session.commit()
     flash('Category deleted.', 'success')
@@ -101,7 +101,7 @@ def food_types():
 @bp.route('/food-types/delete/<int:id>', methods=['POST'])
 @admin_required
 def delete_food_type(id):
-    ft = FoodType.query.get_or_404(id)
+    ft = db.get_or_404(FoodType, id)
     db.session.delete(ft)
     db.session.commit()
     flash('Food Type deleted.', 'success')

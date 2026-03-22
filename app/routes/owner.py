@@ -196,7 +196,7 @@ def add_dish():
 @owner_required
 def edit_dish(id):
     restaurant = get_restaurant()
-    dish = Dish.query.get_or_404(id)
+    dish = db.get_or_404(Dish, id)
     if dish.restaurant_id != restaurant.id:
         flash('Access denied.', 'danger')
         return redirect(url_for('owner.dishes'))
@@ -249,7 +249,7 @@ def edit_dish(id):
 @owner_required
 def delete_dish(id):
     restaurant = get_restaurant()
-    dish = Dish.query.get_or_404(id)
+    dish = db.get_or_404(Dish, id)
     if dish.restaurant_id == restaurant.id:
         db.session.delete(dish)
         db.session.commit()
@@ -274,7 +274,7 @@ def orders():
 @owner_required
 def update_order(id):
     restaurant = get_restaurant()
-    order = Order.query.get_or_404(id)
+    order = db.get_or_404(Order, id)
     if order.restaurant_id == restaurant.id:
         status = request.form.get('status')
         order.status = status
@@ -338,7 +338,7 @@ def add_coupon():
 @owner_required
 def delete_coupon(id):
     restaurant = get_restaurant()
-    coupon = Coupon.query.get_or_404(id)
+    coupon = db.get_or_404(Coupon, id)
     if coupon.restaurant_id == restaurant.id:
         db.session.delete(coupon)
         db.session.commit()
@@ -394,7 +394,7 @@ def media():
 @owner_required
 def delete_media(id):
     restaurant = get_restaurant()
-    media_item = RestaurantMedia.query.get_or_404(id)
+    media_item = db.get_or_404(RestaurantMedia, id)
     if media_item.restaurant_id == restaurant.id:
         db.session.delete(media_item)
         db.session.commit()
@@ -408,7 +408,7 @@ def reorder_media():
     data = request.get_json()
     if data and 'items' in data:
         for item in data['items']:
-            media_item = RestaurantMedia.query.get(item['id'])
+            media_item = db.session.get(RestaurantMedia, item['id'])
             if media_item and media_item.restaurant_id == restaurant.id:
                 media_item.display_order = item['display_order']
         db.session.commit()

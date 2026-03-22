@@ -3,8 +3,8 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import Restaurant, Dish, Order, OrderItem, Review, Coupon, Category, FoodType, Wishlist, RestaurantMedia
 from app.utils import upload_file_to_cloudinary
-from sqlalchemy import func
 from datetime import datetime
+from sqlalchemy import func, select
 
 bp = Blueprint('customer', __name__, url_prefix='/customer')
 
@@ -144,17 +144,18 @@ def global_menu():
     food_type_id = request.args.get('food_type_id', type=int)
     page = request.args.get('page', 1, type=int)
 
-    dish_query = Dish.query.filter_by(is_available=True).join(Restaurant)
-
+    stmt = select(Dish).filter_by(is_available=True).join(Restaurant)
     if category_id:
-        dish_query = dish_query.filter(Dish.category_id == category_id)
+        stmt = stmt.filter(Dish.category_id == category_id)
     if food_type_id:
-        dish_query = dish_query.filter(Dish.food_type_id == food_type_id)
+        stmt = stmt.filter(Dish.food_type_id == food_type_id)
     if query:
-        dish_query = dish_query.filter(Dish.name.ilike(f'%{query}%') | Dish.description.ilike(f'%{query}%'))
+        stmt = stmt.filter(Dish.name.ilike(f'%{query}%') | Dish.description.ilike(f'%{query}%'))
+    
+    stmt = stmt.order_by(Dish.id.desc())
 
     # Paginate dishes (12 per page)
-    paginated_dishes = dish_query.order_by(Dish.id.desc()).paginate(page=page, per_page=12, error_out=False)
+    paginated_dishes = db.paginate(stmt, page=page, per_page=12, error_out=False)
 
     categories = Category.query.all()
     food_types = FoodType.query.all()
@@ -172,7 +173,7 @@ def global_menu():
 @bp.route('/restaurant/<int:id>')
 @customer_required
 def restaurant(id):
-    restaurant = Restaurant.query.get_or_404(id)
+    restaurant = db.get_or_404(Restaurant, id)
     dishes = Dish.query.filter_by(restaurant_id=restaurant.id, is_available=True).all()
     reviews = Review.query.filter_by(restaurant_id=restaurant.id).order_by(Review.created_at.desc()).all()
     avg_rating = sum(r.rating for r in reviews) / len(reviews) if reviews else 0
@@ -184,7 +185,7 @@ def restaurant(id):
     cart_items = []
     cart_total = 0.0
     for dish_id_str, qty in cart.items():
-        cart_dish = Dish.query.get(int(dish_id_str))
+        cart_dish = db.session.get(Dish, int(dish_id_str))
         if cart_dish:
             sub = float(cart_dish.price) * qty
             cart_total += sub
@@ -195,7 +196,7 @@ def restaurant(id):
 @bp.route('/dish/<int:id>')
 @customer_required
 def dish_details(id):
-    dish = Dish.query.get_or_404(id)
+    dish = db.get_or_404(Dish, id)
     restaurant = dish.restaurant
     # Fetch reviews for the restaurant
     reviews = Review.query.filter_by(restaurant_id=restaurant.id).order_by(Review.created_at.desc()).all()
@@ -212,7 +213,7 @@ def dish_details(id):
 @bp.route('/wishlist/add/<int:dish_id>', methods=['POST'])
 @customer_required
 def add_to_wishlist(dish_id):
-    dish = Dish.query.get_or_404(dish_id)
+    dish = db.get_or_404(Dish, dish_id)
     # Prevent duplicate entries
     existing = Wishlist.query.filter_by(user_id=current_user.id, dish_id=dish_id).first()
     if existing:
@@ -247,7 +248,7 @@ def view_cart():
     cart_items = []
     total = 0.0
     for dish_id_str, qty in cart.items():
-        dish = Dish.query.get(int(dish_id_str))
+        dish = db.session.get(Dish, int(dish_id_str))
         if dish:
             subtotal = float(dish.price) * qty
             total += subtotal
@@ -258,7 +259,7 @@ def view_cart():
     discount_amount = 0.0
     
     if coupon_id:
-        coupon = Coupon.query.get(coupon_id)
+        coupon = db.session.get(Coupon, coupon_id)
         if coupon and coupon.is_active:
             # Check if common rest_id matches
             rest_ids = {item['dish'].restaurant_id for item in cart_items}
@@ -277,7 +278,7 @@ def view_cart():
 
 @bp.route('/cart/add/<int:dish_id>', methods=['POST'])
 def add_to_cart(dish_id):
-    dish = Dish.query.get_or_404(dish_id)
+    dish = db.get_or_404(Dish, dish_id)
     cart = session.get('cart', {})
     
     qty = request.form.get('quantity', 1, type=int)
@@ -330,7 +331,7 @@ def update_cart(dish_id, action):
         item_qty = 0
         item_subtotal = 0.0
         for did_str, qty in cart.items():
-            dish = Dish.query.get(int(did_str))
+            dish = db.session.get(Dish, int(did_str))
             if dish:
                 total += float(dish.price) * qty
                 if str(did_str) == dish_id_str:
@@ -362,7 +363,7 @@ def apply_coupon():
         return redirect(url_for('customer.view_cart'))
 
     # Check if coupon applies to any restaurant in the cart
-    cart_items = [Dish.query.get(int(did)) for did in cart.keys() if Dish.query.get(int(did))]
+    cart_items = [db.session.get(Dish, int(did)) for did in cart.keys() if db.session.get(Dish, int(did))]
     rest_ids = {dish.restaurant_id for dish in cart_items if dish}
     if coupon.restaurant_id not in rest_ids:
         flash(f'Promo code {code} is only valid for a specific restaurant.', 'danger')
@@ -385,7 +386,7 @@ def checkout():
     orders_data = {} # { rest_id: {'total': 0.0, 'items': []} }
     
     for dish_id_str, qty in cart.items():
-        dish = Dish.query.get(int(dish_id_str))
+        dish = db.session.get(Dish, int(dish_id_str))
         if dish:
             item_subtotal = float(dish.price) * qty
             total += item_subtotal
@@ -399,7 +400,7 @@ def checkout():
     discount_amount = 0.0
     
     if coupon_id:
-        coupon = Coupon.query.get(coupon_id)
+        coupon = db.session.get(Coupon, coupon_id)
         if coupon and coupon.is_active and (not coupon.valid_until or coupon.valid_until >= datetime.now()) and coupon.restaurant_id in orders_data:
             applied_coupon = coupon
             rest_total = orders_data[coupon.restaurant_id]['total']
@@ -447,7 +448,7 @@ def checkout():
         flash('Order(s) placed successfully!', 'success')
         return redirect(url_for('customer.my_orders'))
         
-    cart_restaurants = [Restaurant.query.get(rid) for rid in orders_data.keys()]
+    cart_restaurants = [db.session.get(Restaurant, rid) for rid in orders_data.keys()]
     return render_template('check_out.html', total=final_total, original_total=total, discount_amount=discount_amount, applied_coupon=applied_coupon, restaurants=cart_restaurants)
 
 @bp.route('/my-orders')
@@ -459,7 +460,7 @@ def my_orders():
 @bp.route('/order/<int:id>')
 @customer_required
 def order_invoice(id):
-    order = Order.query.get_or_404(id)
+    order = db.get_or_404(Order, id)
     if order.customer_id != current_user.id:
         flash('Unauthorized access to order.', 'danger')
         return redirect(url_for('customer.my_orders'))
@@ -468,7 +469,7 @@ def order_invoice(id):
 @bp.route('/restaurant/<int:id>/review', methods=['GET', 'POST'])
 @customer_required
 def leave_review(id):
-    restaurant = Restaurant.query.get_or_404(id)
+    restaurant = db.get_or_404(Restaurant, id)
     # Check if they have a delivered order from this restaurant
     has_ordered = Order.query.filter_by(customer_id=current_user.id, restaurant_id=id, status='delivered').first()
     if not has_ordered:
