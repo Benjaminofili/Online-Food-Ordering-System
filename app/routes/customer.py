@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, request, session, jsonify
 from flask_login import login_required, current_user
 from app import db
-from app.models import Restaurant, Dish, Order, OrderItem, Review, Coupon, Category, FoodType, Wishlist
+from app.models import Restaurant, Dish, Order, OrderItem, Review, Coupon, Category, FoodType, Wishlist, RestaurantMedia
 from app.utils import upload_image_to_cloudinary
 from sqlalchemy import func
 from datetime import datetime
@@ -177,6 +177,9 @@ def restaurant(id):
     reviews = Review.query.filter_by(restaurant_id=restaurant.id).order_by(Review.created_at.desc()).all()
     avg_rating = sum(r.rating for r in reviews) / len(reviews) if reviews else 0
     
+    menus = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='menu').order_by(RestaurantMedia.display_order).all()
+    videos = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='video').order_by(RestaurantMedia.display_order).all()
+    
     cart = session.get('cart', {})
     cart_items = []
     cart_total = 0.0
@@ -187,7 +190,7 @@ def restaurant(id):
             cart_total += sub
             cart_items.append({'dish': cart_dish, 'quantity': qty, 'subtotal': sub})
             
-    return render_template('menu_details.html', restaurant=restaurant, dishes=dishes, reviews=reviews, avg_rating=avg_rating, cart_items=cart_items, cart_total=cart_total)
+    return render_template('menu_details.html', restaurant=restaurant, dishes=dishes, reviews=reviews, avg_rating=avg_rating, cart_items=cart_items, cart_total=cart_total, menus=menus, videos=videos)
 
 @bp.route('/dish/<int:id>')
 @customer_required

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_login import login_required, current_user
 from app import db
-from app.models import Restaurant, Dish, Order, Category, FoodType, Coupon, OrderItem
+from app.models import Restaurant, Dish, Order, Category, FoodType, Coupon, OrderItem, RestaurantMedia
 from app.utils import upload_image_to_cloudinary
 from datetime import datetime, timedelta
 from sqlalchemy import func
@@ -146,7 +146,9 @@ def add_dish():
         return redirect(url_for('owner.profile'))
         
     categories = Category.query.all()
-    food_types = FoodType.query.all()
+    food_types = FoodType.query.filter(
+        db.or_(FoodType.is_approved == True, FoodType.requested_by_id == current_user.id)
+    ).all()
     
     if request.method == 'POST':
         image_file = request.files.get('image')
@@ -154,10 +156,22 @@ def add_dish():
         if image_file and image_file.filename != '':
             image_url = upload_image_to_cloudinary(image_file)
             
+        food_type_id = request.form.get('food_type_id')
+        new_food_type_name = request.form.get('new_food_type')
+        if new_food_type_name:
+            existing = FoodType.query.filter(func.lower(FoodType.name) == new_food_type_name.lower()).first()
+            if existing:
+                food_type_id = existing.id
+            else:
+                new_ft = FoodType(name=new_food_type_name, is_approved=False, requested_by_id=current_user.id)
+                db.session.add(new_ft)
+                db.session.flush()
+                food_type_id = new_ft.id
+            
         dish = Dish(
             restaurant_id=restaurant.id,
             category_id=request.form.get('category_id'),
-            food_type_id=request.form.get('food_type_id'),
+            food_type_id=food_type_id,
             name=request.form.get('name'),
             description=request.form.get('description'),
             price=request.form.get('price'),
@@ -188,7 +202,9 @@ def edit_dish(id):
         return redirect(url_for('owner.dishes'))
         
     categories = Category.query.all()
-    food_types = FoodType.query.all()
+    food_types = FoodType.query.filter(
+        db.or_(FoodType.is_approved == True, FoodType.requested_by_id == current_user.id)
+    ).all()
     
     if request.method == 'POST':
         image_file = request.files.get('image')
@@ -197,8 +213,20 @@ def edit_dish(id):
             if image_url:
                 dish.image_url = image_url
                 
+        food_type_id = request.form.get('food_type_id')
+        new_food_type_name = request.form.get('new_food_type')
+        if new_food_type_name:
+            existing = FoodType.query.filter(func.lower(FoodType.name) == new_food_type_name.lower()).first()
+            if existing:
+                food_type_id = existing.id
+            else:
+                new_ft = FoodType(name=new_food_type_name, is_approved=False, requested_by_id=current_user.id)
+                db.session.add(new_ft)
+                db.session.flush()
+                food_type_id = new_ft.id
+
         dish.category_id = request.form.get('category_id')
-        dish.food_type_id = request.form.get('food_type_id')
+        dish.food_type_id = food_type_id
         dish.name = request.form.get('name')
         dish.description = request.form.get('description')
         dish.price = request.form.get('price')
@@ -316,3 +344,70 @@ def delete_coupon(id):
         db.session.commit()
         flash('Coupon deleted.', 'success')
     return redirect(url_for('owner.coupons'))
+
+@bp.route('/media', methods=['GET', 'POST'])
+@owner_required
+def media():
+    restaurant = get_restaurant()
+    if not restaurant:
+        flash('Please set up your restaurant profile first.', 'warning')
+        return redirect(url_for('owner.profile'))
+        
+    if request.method == 'POST':
+        media_type = request.form.get('media_type') # 'menu' or 'video'
+        
+        url = None
+        if media_type == 'menu':
+            image_file = request.files.get('image')
+            if image_file and image_file.filename != '':
+                url = upload_image_to_cloudinary(image_file)
+        elif media_type == 'video':
+            url = request.form.get('video_url')
+            
+        if url:
+            max_order_item = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type=media_type).order_by(RestaurantMedia.display_order.desc()).first()
+            next_order = (max_order_item.display_order + 1) if max_order_item and max_order_item.display_order is not None else 0
+            
+            new_media = RestaurantMedia(
+                restaurant_id=restaurant.id,
+                media_type=media_type,
+                url=url,
+                display_order=next_order
+            )
+            db.session.add(new_media)
+            db.session.commit()
+            flash('Media added successfully.', 'success')
+        else:
+            flash('Failed to add media. Please provide a valid file or URL.', 'danger')
+            
+        return redirect(url_for('owner.media'))
+
+    menus = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='menu').order_by(RestaurantMedia.display_order).all()
+    videos = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='video').order_by(RestaurantMedia.display_order).all()
+    
+    return render_template('dashboard_wishlist.html', menus=menus, videos=videos, is_media_page=True)
+
+@bp.route('/media/delete/<int:id>', methods=['POST'])
+@owner_required
+def delete_media(id):
+    restaurant = get_restaurant()
+    media_item = RestaurantMedia.query.get_or_404(id)
+    if media_item.restaurant_id == restaurant.id:
+        db.session.delete(media_item)
+        db.session.commit()
+        flash('Media deleted.', 'success')
+    return redirect(url_for('owner.media'))
+
+@bp.route('/media/reorder', methods=['POST'])
+@owner_required
+def reorder_media():
+    restaurant = get_restaurant()
+    data = request.get_json()
+    if data and 'items' in data:
+        for item in data['items']:
+            media_item = RestaurantMedia.query.get(item['id'])
+            if media_item and media_item.restaurant_id == restaurant.id:
+                media_item.display_order = item['display_order']
+        db.session.commit()
+        return {'success': True}
+    return {'success': False}, 400

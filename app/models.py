@@ -33,6 +33,16 @@ class Restaurant(db.Model):
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     owner = db.relationship('User', backref='restaurants')
 
+class RestaurantMedia(db.Model):
+    __tablename__ = 'restaurant_media'
+    id = db.Column(db.Integer, primary_key=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    media_type = db.Column(db.String(20), nullable=False) # 'menu', 'video'
+    url = db.Column(db.String(255), nullable=False)
+    display_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    restaurant = db.relationship('Restaurant', backref='media')
+
 class Coupon(db.Model):
     __tablename__ = 'coupons'
     id = db.Column(db.Integer, primary_key=True)
@@ -54,6 +64,9 @@ class FoodType(db.Model):
     __tablename__ = 'food_types'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(20), unique=True, nullable=False)
+    is_approved = db.Column(db.Boolean, default=True)
+    requested_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    requested_by = db.relationship('User', foreign_keys=[requested_by_id])
 
 class Dish(db.Model):
     __tablename__ = 'dishes'
