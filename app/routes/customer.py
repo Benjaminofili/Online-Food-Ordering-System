@@ -438,6 +438,11 @@ def checkout():
     if not cart:
         flash('Your cart is empty.', 'warning')
         return redirect(url_for('customer.dashboard'))
+
+    # Ensure the customer has set their delivery address and phone
+    if not current_user.address or not current_user.phone:
+        flash('Please set your delivery address and phone number in your profile before checking out.', 'warning')
+        return redirect(url_for('customer.edit_profile'))
         
     total = 0.0
     orders_data = {} # { rest_id: {'total': 0.0, 'items': []} }

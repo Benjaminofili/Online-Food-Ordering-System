@@ -1,0 +1,155 @@
+{% extends 'base_owner.html' %}
+
+{% block title %}Restaurant Profile{% endblock %}
+
+{% block content %}
+<h1 class="mt-4 mb-1">Restaurant Profile</h1>
+<ol class="breadcrumb mb-4">
+    <li class="breadcrumb-item"><a href="{{ url_for('owner.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">Profile</li>
+</ol>
+
+{% if not restaurant %}
+<div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+    <i class="fas fa-exclamation-triangle mr-3 fa-lg"></i>
+    <div>
+        <strong>Welcome!</strong> You're almost ready to start taking orders.
+        Please fill in your restaurant details below to activate your storefront.
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- Restaurant Details Form -->
+    <div class="col-xl-8 col-lg-7 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-store mr-2"></i>Restaurant Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('owner.profile') }}" method="POST" enctype="multipart/form-data">
+                    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+                    <div class="form-row">
+                        <div class="form-group col-md-8">
+                            <label for="name">Restaurant Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name"
+                                   value="{{ restaurant.name if restaurant else '' }}"
+                                   placeholder="e.g. The Tasty Kitchen" required>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="contact">Contact / Phone <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="contact" name="contact"
+                                   value="{{ restaurant.contact if restaurant else '' }}"
+                                   placeholder="+1 555-0100" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">Restaurant Address <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="address" name="address"
+                               value="{{ restaurant.address if restaurant else '' }}"
+                               placeholder="123 Main St, City, Country" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="4"
+                                  placeholder="Tell customers what makes your restaurant special...">{{ restaurant.description if restaurant else '' }}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="logo">Restaurant Logo</label>
+                        {% if restaurant and restaurant.logo_url %}
+                        <div class="d-flex align-items-center mb-2">
+                            <img src="{{ restaurant.logo_url }}" alt="Current Logo"
+                                 class="rounded mr-3"
+                                 style="width: 70px; height: 70px; object-fit: cover; border: 2px solid var(--admin-border);">
+                            <small class="text-muted">Current logo – upload a new one to replace it.</small>
+                        </div>
+                        {% endif %}
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="logo" name="logo" accept="image/*">
+                            <label class="custom-file-label" for="logo">Choose file…</label>
+                        </div>
+                        <small class="form-text text-muted mt-1">Recommended: square image, 400×400 px or larger.</small>
+                    </div>
+
+                    <hr style="border-color: var(--admin-border);">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-1"></i>
+                        {{ 'Save Restaurant Profile' if restaurant else 'Create Restaurant Profile' }}
+                    </button>
+                    {% if restaurant %}
+                    <a href="{{ url_for('owner.dashboard') }}" class="btn btn-outline-secondary ml-2">Cancel</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Owner Account Info (read-only overview) -->
+    <div class="col-xl-4 col-lg-5 mb-4">
+        <!-- Account Card -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-user-circle mr-2"></i>Your Account
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    {% if current_user.profile_image %}
+                    <img src="{{ current_user.profile_image }}" alt="Profile"
+                         class="rounded-circle mb-3"
+                         style="width: 90px; height: 90px; object-fit: cover; border: 3px solid var(--admin-primary);">
+                    {% else %}
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                         style="width:90px;height:90px;background:var(--admin-primary);font-size:2rem;color:#fff;">
+                        {{ current_user.name[0].upper() }}
+                    </div>
+                    {% endif %}
+                    <h5 class="mb-0">{{ current_user.name }}</h5>
+                    <small class="text-muted">{{ current_user.email }}</small>
+                </div>
+                <hr style="border-color: var(--admin-border);">
+                <p class="mb-1"><i class="fas fa-phone mr-2 text-primary"></i>{{ current_user.phone or 'No phone set' }}</p>
+                <p class="mb-0"><i class="fas fa-map-marker-alt mr-2 text-primary"></i>{{ current_user.address or 'No address set' }}</p>
+            </div>
+        </div>
+
+        <!-- Quick Tips Card -->
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-warning">
+                    <i class="fas fa-lightbulb mr-2"></i>Quick Tips
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0 small">
+                    <li class="mb-2"><i class="fas fa-check-circle text-success mr-2"></i>Set a clear restaurant name and address.</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success mr-2"></i>Upload a high-quality logo to attract customers.</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success mr-2"></i>Add dishes via <a href="{{ url_for('owner.add_dish') }}">Manage Dishes</a> after saving.</li>
+                    <li><i class="fas fa-check-circle text-success mr-2"></i>Create coupons to boost your first orders.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-update custom file input label
+document.querySelectorAll('.custom-file-input').forEach(function(input) {
+    input.addEventListener('change', function() {
+        var label = this.nextElementSibling;
+        if (this.files && this.files.length > 0) {
+            label.textContent = this.files[0].name;
+        }
+    });
+});
+</script>
+{% endblock %}

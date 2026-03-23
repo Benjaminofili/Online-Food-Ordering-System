@@ -127,7 +127,7 @@ def profile():
         flash('Restaurant profile updated.', 'success')
         return redirect(url_for('owner.dashboard'))
         
-    return render_template('dashboard_info_edit.html', restaurant=restaurant)
+    return render_template('owner_profile.html', restaurant=restaurant)
 
 @bp.route('/dishes')
 @owner_required
