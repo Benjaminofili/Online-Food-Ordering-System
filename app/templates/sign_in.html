@@ -41,11 +41,21 @@
                                 <div class="col-xl-12">
                                     <div class="login_imput">
                                         {{ form.email(placeholder="Email Address") }}
+                                        {% if form.email.errors %}
+                                            {% for error in form.email.errors %}
+                                                <span class="text-danger small d-block" style="margin-top: -15px; margin-bottom: 10px; margin-left: 20px;">{{ error }}</span>
+                                            {% endfor %}
+                                        {% endif %}
                                     </div>
                                 </div>
                                 <div class="col-xl-12">
                                     <div class="login_imput">
                                         {{ form.password(placeholder="Password") }}
+                                        {% if form.password.errors %}
+                                            {% for error in form.password.errors %}
+                                                <span class="text-danger small d-block" style="margin-top: -15px; margin-bottom: 10px; margin-left: 20px;">{{ error }}</span>
+                                            {% endfor %}
+                                        {% endif %}
                                     </div>
                                 </div>
                                 <div class="col-xl-12">
