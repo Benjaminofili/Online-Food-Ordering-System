@@ -439,4 +439,90 @@ $(function () {
         }
     });
 
+    // ====== CART AJAX ADD ======
+    $(document).on('submit', 'form[action*="/cart/add/"]', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var url = form.attr('action');
+        var formData = form.serialize();
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: formData,
+            headers: { 'Accept': 'application/json' },
+            success: function(response) {
+                if (response.success) {
+                    // Update cart count in header
+                    $('#cart_count, .cart_icon span').text(response.count);
+                    
+                    // Success Notification
+                    var toast = $('<div class="alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3 shadow" style="z-index: 9999;"><i class="fas fa-shopping-basket me-2"></i>' + response.message + '</div>');
+                    $('body').append(toast);
+                    setTimeout(function() { toast.fadeOut(function() { $(this).remove(); }); }, 3000);
+                }
+            },
+            error: function() {
+                alert('Something went wrong. Please try again.');
+            }
+        });
+    });
+
+    // ====== WISHLIST AJAX TOGGLE ======
+    $(document).on('submit', 'form[action*="/wishlist/add/"], form[action*="/wishlist/remove/"]', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var url = form.attr('action');
+        var formData = form.serialize();
+        var isRemove = url.indexOf('/remove/') !== -1;
+        
+        // Find potential heart icons to update (overlay, in-card, or standalone button)
+        var heartIcon = form.find('.fa-heart');
+        if (!heartIcon.length) heartIcon = form.closest('.menu_item').find('.fa-heart');
+        if (!heartIcon.length) heartIcon = form.parent().find('.fa-heart');
+        
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: formData,
+            headers: { 'Accept': 'application/json' },
+            success: function(response) {
+                if (response.success) {
+                    // Toggle icon state visually
+                    if (isRemove) {
+                        heartIcon.removeClass('fas text-danger').addClass('fal');
+                        // Special handling for the Wishlist Page (remove the card)
+                        if (window.location.pathname.includes('/wishlist')) {
+                            form.closest('.col-xxl-4, .col-md-6, .col-xl-4').fadeOut(function() {
+                                $(this).remove();
+                                if ($('.menu_item').length === 0) {
+                                    location.reload(); // Reload to show empty state illustration
+                                }
+                            });
+                        }
+                        // Update form action/button if it's a toggle (on details page for example)
+                        var newUrl = url.replace('/remove/', '/add/');
+                        form.attr('action', newUrl);
+                    } else {
+                        heartIcon.removeClass('fal').addClass('fas text-danger');
+                        var newUrl = url.replace('/add/', '/remove/');
+                        form.attr('action', newUrl);
+                    }
+
+                    // Notification Toast
+                    var toastClass = isRemove ? 'alert-info' : 'alert-success';
+                    var icon = isRemove ? 'fas fa-heart-broken' : 'fas fa-heart';
+                    var toast = $('<div class="alert ' + toastClass + ' position-fixed top-0 start-50 translate-middle-x mt-3 shadow" style="z-index: 9999;"><i class="' + icon + ' me-2"></i>' + response.message + '</div>');
+                    $('body').append(toast);
+                    setTimeout(function() { toast.fadeOut(function() { $(this).remove(); }); }, 3000);
+                }
+            },
+            error: function() {
+                // If not logged in, the server might redirect to login (302), which AJAX handles as error or follows
+                // Usually better to redirect manually if we get a 401 or similar
+                window.location.reload(); 
+            }
+        });
+    });
+
 });

@@ -227,63 +227,7 @@
     <!--main/custom js-->
     <script src="{{ url_for('static', filename='regfood/js/main.js') }}"></script>
 
-    <script>
-        $(document).ready(function() {
-            // Handle AJAX Add to Cart
-            $(document).on('submit', 'form[action*="/cart/add/"]', function(e) {
-                e.preventDefault();
-                var form = $(this);
-                var url = form.attr('action');
-                var formData = form.serialize();
 
-                $.ajax({
-                    type: "POST",
-                    url: url,
-                    data: formData,
-                    headers: { 'Accept': 'application/json' },
-                    success: function(response) {
-                        if (response.success) {
-                            // Update cart count
-                            $('#cart_count').text(response.count);
-                            
-                            // Show success message
-                            var toast = $('<div class="alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3 shadow" style="z-index: 1050;"><i class="fas fa-check-circle me-2"></i>' + response.message + '</div>');
-                            $('body').append(toast);
-                            setTimeout(function() { toast.fadeOut(function() { $(this).remove(); }); }, 3000);
-                        }
-                    },
-                    error: function() {
-                        alert('Something went wrong. Please try again.');
-                    }
-                });
-            });
-
-            // Handle AJAX Add to Wishlist
-            $(document).on('submit', 'form[action*="/wishlist/add/"]', function(e) {
-                e.preventDefault();
-                var form = $(this);
-                var url = form.attr('action');
-                var formData = form.serialize();
-
-                $.ajax({
-                    type: "POST",
-                    url: url,
-                    data: formData,
-                    headers: { 'Accept': 'application/json' },
-                    success: function(response) {
-                        if (response.success) {
-                            var toast = $('<div class="alert alert-info position-fixed top-0 start-50 translate-middle-x mt-3 shadow" style="z-index: 1050;"><i class="fas fa-info-circle me-2"></i>' + response.message + '</div>');
-                            $('body').append(toast);
-                            setTimeout(function() { toast.fadeOut(function() { $(this).remove(); }); }, 3000);
-                        }
-                    },
-                    error: function() {
-                        alert('Something went wrong. Please try again.');
-                    }
-                });
-            });
-        });
-    </script>
 
 
     <!-- ===== OFFCANVAS NAV BACKDROP ===== -->

@@ -217,20 +217,29 @@ def add_to_wishlist(dish_id):
     # Prevent duplicate entries
     existing = Wishlist.query.filter_by(user_id=current_user.id, dish_id=dish_id).first()
     if existing:
+        if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+            return {'success': False, 'message': 'Already in wishlist'}, 200
         flash('Dish already in your wishlist.', 'info')
     else:
         entry = Wishlist(user_id=current_user.id, dish_id=dish_id)
         db.session.add(entry)
         db.session.commit()
+        if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+            return {'success': True, 'message': 'Added to wishlist'}, 200
         flash('Dish added to wishlist.', 'success')
-    # Redirect back to the page the user came from
     return redirect(request.referrer or url_for('customer.global_menu'))
 
 @bp.route('/wishlist/remove/<int:dish_id>', methods=['POST'])
 @customer_required
 def remove_from_wishlist(dish_id):
-    Wishlist.query.filter_by(user_id=current_user.id, dish_id=dish_id).delete()
-    db.session.commit()
+    entry = Wishlist.query.filter_by(user_id=current_user.id, dish_id=dish_id).first()
+    if entry:
+        db.session.delete(entry)
+        db.session.commit()
+    
+    if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+        return {'success': True, 'message': 'Removed from wishlist'}, 200
+        
     flash('Removed from wishlist.', 'success')
     return redirect(url_for('customer.view_wishlist'))
 

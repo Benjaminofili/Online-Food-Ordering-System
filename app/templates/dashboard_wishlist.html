@@ -144,8 +144,15 @@
                                             {% for dish in dishes %}
                                             <div class="col-xxl-4 col-md-6 wow fadeInUp" data-wow-duration="1s">
                                                 <div class="menu_item">
-                                                    <div class="menu_item_img">
+                                                    <div class="menu_item_img" style="position: relative;">
                                                         <img src="{{ dish.image_url or url_for('static', filename='regfood/images/menu2_img_1.jpg') }}" alt="{{ dish.name }}" class="img-fluid w-100" style="height: 200px; object-fit: cover;">
+                                                        
+                                                        <form action="{{ url_for('customer.remove_from_wishlist', dish_id=dish.id) }}" method="POST" style="position: absolute; top: 10px; right: 10px; z-index: 5;">
+                                                            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                            <button type="submit" class="wishlist_btn_overlay" title="Remove from wishlist">
+                                                                <i class="fas fa-heart"></i>
+                                                            </button>
+                                                        </form>
                                                     </div>
                                                     <div class="menu_item_text">
                                                         {% if dish.category %}<a class="category" href="#">{{ dish.category.name }}</a>{% endif %}
@@ -155,13 +162,7 @@
                                                             {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                             <button type="submit" class="add_to_cart border-0" style="cursor: pointer;">add to cart</button>
                                                         </form>
-                                                        <ul class="d-flex flex-wrap justify-content-end" style="float: right;">
-                                                            <li>
-                                                                <form action="{{ url_for('customer.remove_from_wishlist', dish_id=dish.id) }}" method="POST" style="display:inline;">
-                                                                    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                                                    <button type="submit" class="btn btn-link p-0 border-0" title="Remove from wishlist" style="color: #ff3c00; background: none; border: none; padding: 0;"><i class="fas fa-trash-alt"></i></button>
-                                                                </form>
-                                                            </li>
+                                                        <ul class="d-flex flex-wrap justify-content-end">
                                                             <li><a href="{{ url_for('customer.dish_details', id=dish.id) }}"><i class="far fa-eye"></i></a></li>
                                                         </ul>
                                                     </div>
@@ -179,28 +180,7 @@
                                             </div>
                                         {% endif %}
                                     </div>
-                                    <div class="pagination mt_30">
-                                        <div class="row">
-                                            <div class="col-12">
-                                                <nav aria-label="...">
-                                                    <ul class="pagination">
-                                                        <li class="page-item">
-                                                            <a class="page-link" href="#"><i
-                                                                    class="fas fa-long-arrow-alt-left"></i></a>
-                                                        </li>
-                                                        <li class="page-item"><a class="page-link" href="#">1</a></li>
-                                                        <li class="page-item active"><a class="page-link" href="#">2</a>
-                                                        </li>
-                                                        <li class="page-item"><a class="page-link" href="#">3</a></li>
-                                                        <li class="page-item">
-                                                            <a class="page-link" href="#"><i
-                                                                    class="fas fa-long-arrow-alt-right"></i></a>
-                                                        </li>
-                                                    </ul>
-                                                </nav>
-                                            </div>
-                                        </div>
-                                    </div>
+
 
                                 </div>
                             </div>
@@ -626,6 +606,27 @@
     </script>
 
 
+    <style>
+        .wishlist_btn_overlay {
+            width: 35px;
+            height: 35px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff3c00;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .wishlist_btn_overlay:hover {
+            transform: scale(1.1);
+            background: #ff3c00;
+            color: #fff;
+        }
+    </style>
 </body>
 
 

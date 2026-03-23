@@ -21,6 +21,10 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    def is_wishlisted(self, dish_id):
+        from app.models import Wishlist
+        return Wishlist.query.filter_by(user_id=self.id, dish_id=dish_id).first() is not None
+
 class Restaurant(db.Model):
     __tablename__ = 'restaurants'
     id = db.Column(db.Integer, primary_key=True)

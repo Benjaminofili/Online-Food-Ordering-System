@@ -250,8 +250,17 @@
                             </div>
                             <ul class="details_button_area d-flex flex-wrap">
                                 <li><button type="submit" class="common_btn border-0">add to cart</button></li>
-                                <li><button type="button" class="common_btn border-0" onclick="document.getElementById('wishlistFormDet').submit()">wishlist</button></li>
+                                {% set is_wishlisted = current_user.is_authenticated and current_user.is_wishlisted(dish.id) %}
+                                <li>
+                                    <button type="button" class="common_btn border-0 {{ 'wishlisted-active' if is_wishlisted else '' }}" onclick="document.getElementById('wishlistFormDet').submit()">
+                                        <i class="{{ 'fas fa-heart' if is_wishlisted else 'fal fa-heart' }}"></i> 
+                                        {{ 'Wishlisted' if is_wishlisted else 'Wishlist' }}
+                                    </button>
+                                </li>
                             </ul>
+                            <style>
+                                .wishlisted-active { background: #ff3c00 !important; }
+                            </style>
                         </form>
                         <form id="wishlistFormDet" action="{{ url_for('customer.add_to_wishlist', dish_id=dish.id) }}" method="POST" style="display:none;">
                             {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
@@ -441,7 +450,10 @@
                                     <li>
                                         <form action="{{ url_for('customer.add_to_wishlist', dish_id=related.id) }}" method="POST" style="display:inline;">
                                             {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                            <button type="submit" title="Add to Wishlist" class="border-0 bg-transparent" style="width:100%; height:100%; color:inherit;"><i class="fal fa-heart"></i></button>
+                                            <button type="submit" title="Add to Wishlist" class="border-0 bg-transparent" style="width:100%; height:100%; color:inherit;">
+                                                {% set related_wishlisted = current_user.is_authenticated and current_user.is_wishlisted(related.id) %}
+                                                <i class="{{ 'fas fa-heart text-danger' if related_wishlisted else 'fal fa-heart' }}"></i>
+                                            </button>
                                         </form>
                                     </li>
                                     <li><a href="{{ url_for('customer.dish_details', id=related.id) }}"><i class="far fa-eye"></i></a></li>
@@ -655,64 +667,6 @@
 
     <!--main/custom js-->
     <script src="{{ url_for('static', filename='regfood/js/main.js') }}"></script>
-
-    <script>
-        $(document).ready(function() {
-            // Handle AJAX Add to Cart
-            $(document).on('submit', 'form[action*="/cart/add/"]', function(e) {
-                e.preventDefault();
-                var form = $(this);
-                var url = form.attr('action');
-                var formData = form.serialize();
-
-                $.ajax({
-                    type: "POST",
-                    url: url,
-                    data: formData,
-                    headers: { 'Accept': 'application/json' },
-                    success: function(response) {
-                        if (response.success) {
-                            // Update cart count
-                            $('#cart_count').text(response.count);
-                            
-                            // Show success message
-                            var toast = $('<div class="alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3 shadow" style="z-index: 1050;">' + response.message + '</div>');
-                            $('body').append(toast);
-                            setTimeout(function() { toast.fadeOut(function() { $(this).remove(); }); }, 3000);
-                        }
-                    },
-                    error: function() {
-                        alert('Something went wrong. Please try again.');
-                    }
-                });
-            });
-
-            // Handle AJAX Add to Wishlist
-            $(document).on('submit', 'form[action*="/wishlist/add/"]', function(e) {
-                e.preventDefault();
-                var form = $(this);
-                var url = form.attr('action');
-                var formData = form.serialize();
-
-                $.ajax({
-                    type: "POST",
-                    url: url,
-                    data: formData,
-                    headers: { 'Accept': 'application/json' },
-                    success: function(response) {
-                        if (response.success) {
-                            var toast = $('<div class="alert alert-info position-fixed top-0 start-50 translate-middle-x mt-3 shadow" style="z-index: 1050;">' + response.message + '</div>');
-                            $('body').append(toast);
-                            setTimeout(function() { toast.fadeOut(function() { $(this).remove(); }); }, 3000);
-                        }
-                    },
-                    error: function() {
-                        alert('Something went wrong. Please try again.');
-                    }
-                });
-            });
-        });
-    </script>
 
 
     <!-- ===== OFFCANVAS NAV BACKDROP ===== -->

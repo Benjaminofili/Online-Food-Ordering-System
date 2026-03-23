@@ -218,7 +218,10 @@ function submitForm() {
                                     <li>
                                         <form action="{{ url_for('customer.add_to_wishlist', dish_id=dish.id) }}" method="POST" style="display:inline;">
                                             {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                            <button type="submit" title="Add to Wishlist" class="border-0 bg-transparent" style="width:100%; height:100%; color:inherit;"><i class="fal fa-heart"></i></button>
+                                            <button type="submit" title="Add to Wishlist" class="border-0 bg-transparent" style="width:100%; height:100%; color:inherit;">
+                                                {% set is_wishlisted = current_user.is_authenticated and current_user.is_wishlisted(dish.id) %}
+                                                <i class="{{ 'fas fa-heart text-danger' if is_wishlisted else 'fal fa-heart' }}"></i>
+                                            </button>
                                         </form>
                                     </li>
                                     <li><a href="{{ url_for('customer.dish_details', id=dish.id) }}"><i class="far fa-eye"></i></a></li>
@@ -467,70 +470,6 @@ function submitForm() {
     <script src="{{ url_for('static', filename='regfood/js/sticky_sidebar.js') }}"></script>
     <!-- wow js -->
     <script src="{{ url_for('static', filename='regfood/js/wow.min.js') }}"></script>
-    <!-- ex zoom js -->
-    <script src="{{ url_for('static', filename='regfood/js/jquery.exzoom.js') }}"></script>
-
-    <!--main/custom js-->
-    <script src="{{ url_for('static', filename='regfood/js/main.js') }}"></script>
-
-    <script>
-        $(document).ready(function() {
-            // Handle AJAX Add to Cart
-            $(document).on('submit', 'form[action*="/cart/add/"]', function(e) {
-                e.preventDefault();
-                var form = $(this);
-                var url = form.attr('action');
-                var formData = form.serialize();
-
-                $.ajax({
-                    type: "POST",
-                    url: url,
-                    data: formData,
-                    headers: { 'Accept': 'application/json' },
-                    success: function(response) {
-                        if (response.success) {
-                            // Update cart count
-                            $('#cart_count').text(response.count);
-                            
-                            // Show success message
-                            var toast = $('<div class="alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3 shadow" style="z-index: 1050;">' + response.message + '</div>');
-                            $('body').append(toast);
-                            setTimeout(function() { toast.fadeOut(function() { $(this).remove(); }); }, 3000);
-                        }
-                    },
-                    error: function() {
-                        alert('Something went wrong. Please try again.');
-                    }
-                });
-            });
-
-            // Handle AJAX Add to Wishlist
-            $(document).on('submit', 'form[action*="/wishlist/add/"]', function(e) {
-                e.preventDefault();
-                var form = $(this);
-                var url = form.attr('action');
-                var formData = form.serialize();
-
-                $.ajax({
-                    type: "POST",
-                    url: url,
-                    data: formData,
-                    headers: { 'Accept': 'application/json' },
-                    success: function(response) {
-                        if (response.success) {
-                            var toast = $('<div class="alert alert-info position-fixed top-0 start-50 translate-middle-x mt-3 shadow" style="z-index: 1050;">' + response.message + '</div>');
-                            $('body').append(toast);
-                            setTimeout(function() { toast.fadeOut(function() { $(this).remove(); }); }, 3000);
-                        }
-                    },
-                    error: function() {
-                        alert('Something went wrong. Please try again.');
-                    }
-                });
-            });
-        });
-    </script>
-
 
     <!-- ===== OFFCANVAS NAV BACKDROP ===== -->
     <div id="navBackdrop"></div>

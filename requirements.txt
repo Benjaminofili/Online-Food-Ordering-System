@@ -28,6 +28,6 @@ urllib3==2.6.3
 Werkzeug==3.1.6
 WTForms==3.2.1
 pyspellchecker
-pytest
-pytest-flask
-pytest-playwright
+# pytest
+# pytest-flask
+# pytest-playwright
