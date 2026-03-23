@@ -8,6 +8,12 @@ from sqlalchemy import func, select
 
 bp = Blueprint('customer', __name__, url_prefix='/customer')
 
+def _is_ajax():
+    """Detect AJAX requests reliably."""
+    return (request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+            request.headers.get('Accept') == 'application/json' or
+            (request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html))
+
 # ── Public JSON API (no auth required) ──────────────────────────────────────
 
 @bp.route('/api/restaurants/search')
@@ -216,15 +222,19 @@ def add_to_wishlist(dish_id):
     dish = db.get_or_404(Dish, dish_id)
     # Prevent duplicate entries
     existing = Wishlist.query.filter_by(user_id=current_user.id, dish_id=dish_id).first()
+    # Detect AJAX request
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+              (request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html)
+    
     if existing:
-        if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+        if is_ajax:
             return {'success': False, 'message': 'Already in wishlist'}, 200
         flash('Dish already in your wishlist.', 'info')
     else:
         entry = Wishlist(user_id=current_user.id, dish_id=dish_id)
         db.session.add(entry)
         db.session.commit()
-        if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+        if is_ajax:
             return {'success': True, 'message': 'Added to wishlist'}, 200
         flash('Dish added to wishlist.', 'success')
     return redirect(request.referrer or url_for('customer.global_menu'))
@@ -237,7 +247,11 @@ def remove_from_wishlist(dish_id):
         db.session.delete(entry)
         db.session.commit()
     
-    if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+    # Detect AJAX request
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+              (request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html)
+              
+    if is_ajax:
         return {'success': True, 'message': 'Removed from wishlist'}, 200
         
     flash('Removed from wishlist.', 'success')
@@ -300,7 +314,7 @@ def add_to_cart(dish_id):
     session['cart'] = cart
     session.modified = True
     
-    if request.headers.get('Accept') == 'application/json' or request.is_json:
+    if _is_ajax():
         return {'success': True, 'count': sum(cart.values()), 'message': f'{dish.name} added to cart.'}
         
     flash(f'{dish.name} added to cart.', 'success')
@@ -310,6 +324,10 @@ def add_to_cart(dish_id):
 def clear_cart():
     session.pop('cart', None)
     session.pop('applied_coupon_id', None)
+    
+    if _is_ajax():
+        return {'success': True, 'message': 'Cart cleared.'}
+    
     flash('Cart cleared.', 'success')
     return redirect(url_for('customer.view_cart'))
 
@@ -334,7 +352,7 @@ def update_cart(dish_id, action):
         if not cart:
             session.pop('applied_coupon_id', None)
             
-    if request.headers.get('Accept') == 'application/json':
+    if _is_ajax():
         # Return updated JSON
         total = 0.0
         item_qty = 0
@@ -346,7 +364,7 @@ def update_cart(dish_id, action):
                 if str(did_str) == dish_id_str:
                     item_qty = qty
                     item_subtotal = float(dish.price) * qty
-        return {'success': True, 'new_qty': item_qty, 'new_subtotal': item_subtotal, 'new_total': total}
+        return {'success': True, 'new_qty': item_qty, 'new_subtotal': item_subtotal, 'new_total': total, 'count': sum(cart.values()), 'action': action}
         
     return redirect(url_for('customer.view_cart'))
 
@@ -354,32 +372,62 @@ def update_cart(dish_id, action):
 def apply_coupon():
     code = request.form.get('coupon_code')
     cart = session.get('cart', {})
+    is_ajax = _is_ajax()
     
     if not cart:
+        if is_ajax:
+            return {'success': False, 'message': 'Add items to your cart first.'}, 200
         flash('Add items to your cart first.', 'warning')
         return redirect(url_for('customer.view_cart'))
         
     coupon = Coupon.query.filter_by(code=code, is_active=True).first()
     
     if not coupon:
-        flash('Invalid or inactive promo code.', 'danger')
         session.pop('applied_coupon_id', None)
+        if is_ajax:
+            return {'success': False, 'message': 'Invalid or inactive promo code.'}, 200
+        flash('Invalid or inactive promo code.', 'danger')
         return redirect(url_for('customer.view_cart'))
         
     if coupon.valid_until and coupon.valid_until < datetime.now():
-        flash('This promo code has expired.', 'danger')
         session.pop('applied_coupon_id', None)
+        if is_ajax:
+            return {'success': False, 'message': 'This promo code has expired.'}, 200
+        flash('This promo code has expired.', 'danger')
         return redirect(url_for('customer.view_cart'))
 
     # Check if coupon applies to any restaurant in the cart
     cart_items = [db.session.get(Dish, int(did)) for did in cart.keys() if db.session.get(Dish, int(did))]
     rest_ids = {dish.restaurant_id for dish in cart_items if dish}
     if coupon.restaurant_id not in rest_ids:
-        flash(f'Promo code {code} is only valid for a specific restaurant.', 'danger')
         session.pop('applied_coupon_id', None)
+        if is_ajax:
+            return {'success': False, 'message': f'Promo code {code} is only valid for a specific restaurant.'}, 200
+        flash(f'Promo code {code} is only valid for a specific restaurant.', 'danger')
         return redirect(url_for('customer.view_cart'))
         
     session['applied_coupon_id'] = coupon.id
+    
+    # Calculate discount for AJAX response
+    if is_ajax:
+        total = 0.0
+        for did_str, qty in cart.items():
+            dish = db.session.get(Dish, int(did_str))
+            if dish:
+                total += float(dish.price) * qty
+        rest_total = sum(
+            float(db.session.get(Dish, int(did)).price) * qty
+            for did, qty in cart.items()
+            if db.session.get(Dish, int(did)) and db.session.get(Dish, int(did)).restaurant_id == coupon.restaurant_id
+        )
+        if coupon.discount_type == 'percent':
+            discount_amount = rest_total * (float(coupon.discount_value) / 100.0)
+        else:
+            discount_amount = float(coupon.discount_value)
+        discount_amount = min(discount_amount, rest_total)
+        final_total = max(0.0, total - discount_amount)
+        return {'success': True, 'message': f'Promo code {code} applied!', 'discount_amount': round(discount_amount, 2), 'final_total': round(final_total, 2), 'total': round(total, 2)}
+    
     flash(f'Promo code {code} applied successfully!', 'success')
     return redirect(url_for('customer.view_cart'))
 

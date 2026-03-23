@@ -252,18 +252,18 @@
                                 <li><button type="submit" class="common_btn border-0">add to cart</button></li>
                                 {% set is_wishlisted = current_user.is_authenticated and current_user.is_wishlisted(dish.id) %}
                                 <li>
-                                    <button type="button" class="common_btn border-0 {{ 'wishlisted-active' if is_wishlisted else '' }}" onclick="document.getElementById('wishlistFormDet').submit()">
-                                        <i class="{{ 'fas fa-heart' if is_wishlisted else 'fal fa-heart' }}"></i> 
-                                        {{ 'Wishlisted' if is_wishlisted else 'Wishlist' }}
-                                    </button>
+                                    <form action="{{ url_for('customer.' + ('remove_from_wishlist' if is_wishlisted else 'add_to_wishlist'), dish_id=dish.id) }}" method="POST" class="d-inline-block">
+                                        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                        <button type="submit" class="common_btn border-0 {{ 'wishlisted-active' if is_wishlisted else '' }}">
+                                            <i class="{{ 'fas fa-heart' if is_wishlisted else 'fal fa-heart' }}"></i> 
+                                            {{ 'Wishlisted' if is_wishlisted else 'Wishlist' }}
+                                        </button>
+                                    </form>
                                 </li>
                             </ul>
                             <style>
                                 .wishlisted-active { background: #ff3c00 !important; }
                             </style>
-                        </form>
-                        <form id="wishlistFormDet" action="{{ url_for('customer.add_to_wishlist', dish_id=dish.id) }}" method="POST" style="display:none;">
-                            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                         </form>
 
                         <script>

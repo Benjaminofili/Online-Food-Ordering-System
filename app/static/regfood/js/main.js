@@ -439,32 +439,123 @@ $(function () {
         }
     });
 
+    // ====== TOAST HELPER ======
+    function showToast(message, type) {
+        var icon = type === 'success' ? 'fa-check-circle' : (type === 'danger' ? 'fa-exclamation-circle' : 'fa-info-circle');
+        var alertClass = 'alert-' + type;
+        
+        var toast = $('<div class="alert ' + alertClass + ' position-fixed top-0 start-50 translate-middle-x mt-3 shadow" style="z-index: 9999;"><i class="fas ' + icon + ' me-2"></i>' + message + '</div>');
+        $('body').append(toast);
+        setTimeout(function() { toast.fadeOut(function() { $(this).remove(); }); }, 3000);
+    }
+
     // ====== CART AJAX ADD ======
     $(document).on('submit', 'form[action*="/cart/add/"]', function(e) {
         e.preventDefault();
         var form = $(this);
-        var url = form.attr('action');
-        var formData = form.serialize();
-
         $.ajax({
             type: "POST",
-            url: url,
-            data: formData,
+            url: form.attr('action'),
+            data: form.serialize(),
             headers: { 'Accept': 'application/json' },
             success: function(response) {
                 if (response.success) {
-                    // Update cart count in header
                     $('#cart_count, .cart_icon span').text(response.count);
-                    
-                    // Success Notification
-                    var toast = $('<div class="alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3 shadow" style="z-index: 9999;"><i class="fas fa-shopping-basket me-2"></i>' + response.message + '</div>');
-                    $('body').append(toast);
-                    setTimeout(function() { toast.fadeOut(function() { $(this).remove(); }); }, 3000);
+                    showToast(response.message, 'success');
                 }
             },
-            error: function() {
-                alert('Something went wrong. Please try again.');
-            }
+            error: function() { showToast('Something went wrong. Please try again.', 'danger'); }
+        });
+    });
+
+    // ====== CART AJAX UPDATE/REMOVE ======
+    $(document).on('submit', 'form[action*="/cart/update/"]', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var row = form.closest('tr');
+        
+        $.ajax({
+            type: "POST",
+            url: form.attr('action'),
+            data: form.serialize(),
+            headers: { 'Accept': 'application/json' },
+            success: function(response) {
+                if (response.success) {
+                    $('#cart_count, .cart_icon span').text(response.count);
+                    
+                    if (response.action === 'remove' || response.new_qty === 0) {
+                        row.fadeOut(function() {
+                            $(this).remove();
+                            if ($('.cart_table tbody tr').length === 0 || $('.cart_table tbody tr.shadow-none').length > 0) {
+                                location.reload(); // Reload to show empty state
+                            }
+                        });
+                        showToast('Item removed from cart.', 'info');
+                    } else {
+                        // Update quantity and subtotal
+                        row.find('input[type="text"]').val(response.new_qty);
+                        row.find('.cart_total h6').text('$' + response.new_subtotal.toFixed(2));
+                    }
+                    
+                    // Update main totals (ignoring discount here, as it might get complex without reloading, but we'll recalculate simple total)
+                    $('.cart_list_footer_button_text p:first-of-type span').text('$' + response.new_total.toFixed(2));
+                    
+                    // If a coupon was applied, it might be invalidated or recalculated. 
+                    // To be safe, if the total changes significantly, we reload, OR we trigger a background coupon re-calc.
+                    // For now, reload if a coupon is active to ensure accurate calculation, 
+                    // else just update the visual values.
+                    if ($('input[name="coupon_code"]').val() && $('input[name="coupon_code"]').val().trim() !== '') {
+                        location.reload(); 
+                    } else {
+                        $('.cart_list_footer_button_text p.total span:last-child').text('$' + response.new_total.toFixed(2));
+                    }
+                }
+            },
+            error: function() { window.location.reload(); }
+        });
+    });
+
+    // ====== CART AJAX CLEAR ======
+    $(document).on('submit', 'form[action*="/cart/clear"]', function(e) {
+        e.preventDefault();
+        $.ajax({
+            type: "POST",
+            url: $(this).attr('action'),
+            data: $(this).serialize(),
+            headers: { 'Accept': 'application/json' },
+            success: function(response) {
+                if (response.success) {
+                    location.reload(); // Reload to render empty state properly
+                }
+            },
+            error: function() { window.location.reload(); }
+        });
+    });
+
+    // ====== COUPON AJAX APPLY ======
+    $(document).on('submit', 'form[action*="/cart/apply_coupon"]', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        $.ajax({
+            type: "POST",
+            url: form.attr('action'),
+            data: form.serialize(),
+            headers: { 'Accept': 'application/json' },
+            success: function(response) {
+                if (response.success) {
+                    showToast(response.message, 'success');
+                    // Update DOM totals
+                    var discountElem = $('.cart_list_footer_button_text p:nth-of-type(3) span');
+                    var totalElem = $('.cart_list_footer_button_text p.total span:last-child');
+                    
+                    if (discountElem.length) discountElem.text('$' + response.discount_amount.toFixed(2));
+                    if (totalElem.length) totalElem.text('$' + response.final_total.toFixed(2));
+                } else {
+                    showToast(response.message, 'danger');
+                    $('input[name="coupon_code"]').val('');
+                }
+            },
+            error: function() { showToast('Error applying coupon.', 'danger'); }
         });
     });
 
@@ -473,10 +564,8 @@ $(function () {
         e.preventDefault();
         var form = $(this);
         var url = form.attr('action');
-        var formData = form.serialize();
         var isRemove = url.indexOf('/remove/') !== -1;
         
-        // Find potential heart icons to update (overlay, in-card, or standalone button)
         var heartIcon = form.find('.fa-heart');
         if (!heartIcon.length) heartIcon = form.closest('.menu_item').find('.fa-heart');
         if (!heartIcon.length) heartIcon = form.parent().find('.fa-heart');
@@ -484,44 +573,28 @@ $(function () {
         $.ajax({
             type: "POST",
             url: url,
-            data: formData,
+            data: form.serialize(),
             headers: { 'Accept': 'application/json' },
             success: function(response) {
                 if (response.success) {
-                    // Toggle icon state visually
                     if (isRemove) {
                         heartIcon.removeClass('fas text-danger').addClass('fal');
-                        // Special handling for the Wishlist Page (remove the card)
                         if (window.location.pathname.includes('/wishlist')) {
                             form.closest('.col-xxl-4, .col-md-6, .col-xl-4').fadeOut(function() {
                                 $(this).remove();
-                                if ($('.menu_item').length === 0) {
-                                    location.reload(); // Reload to show empty state illustration
-                                }
+                                if ($('.menu_item').length === 0) location.reload();
                             });
                         }
-                        // Update form action/button if it's a toggle (on details page for example)
-                        var newUrl = url.replace('/remove/', '/add/');
-                        form.attr('action', newUrl);
+                        form.attr('action', url.replace('/remove/', '/add/'));
+                        showToast(response.message, 'info');
                     } else {
                         heartIcon.removeClass('fal').addClass('fas text-danger');
-                        var newUrl = url.replace('/add/', '/remove/');
-                        form.attr('action', newUrl);
+                        form.attr('action', url.replace('/add/', '/remove/'));
+                        showToast(response.message, 'success');
                     }
-
-                    // Notification Toast
-                    var toastClass = isRemove ? 'alert-info' : 'alert-success';
-                    var icon = isRemove ? 'fas fa-heart-broken' : 'fas fa-heart';
-                    var toast = $('<div class="alert ' + toastClass + ' position-fixed top-0 start-50 translate-middle-x mt-3 shadow" style="z-index: 9999;"><i class="' + icon + ' me-2"></i>' + response.message + '</div>');
-                    $('body').append(toast);
-                    setTimeout(function() { toast.fadeOut(function() { $(this).remove(); }); }, 3000);
                 }
             },
-            error: function() {
-                // If not logged in, the server might redirect to login (302), which AJAX handles as error or follows
-                // Usually better to redirect manually if we get a 401 or similar
-                window.location.reload(); 
-            }
+            error: function() { window.location.reload(); }
         });
     });
 
