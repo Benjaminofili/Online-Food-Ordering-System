@@ -114,6 +114,33 @@ $(document).ready(function() {
             }
         });
     }
+
+    const dishesFeedUrl = "{{ url_for('owner.dishes_feed') }}";
+    let dishesSnapshot = null;
+    function serializeDishes(dishes) {
+        return JSON.stringify((dishes || []).map(d => [d.id, d.name, d.price, d.is_available]));
+    }
+
+    async function syncDishesLifecycle() {
+        try {
+            const response = await fetch(dishesFeedUrl, { cache: 'no-store' });
+            if (!response.ok) return;
+            const data = await response.json();
+            const snapshot = serializeDishes(data.dishes || []);
+            if (dishesSnapshot === null) {
+                dishesSnapshot = snapshot;
+                return;
+            }
+            if (snapshot !== dishesSnapshot) {
+                location.reload();
+            }
+        } catch (e) {
+            // keep polling resilient
+        }
+    }
+
+    syncDishesLifecycle();
+    setInterval(syncDishesLifecycle, 5000);
 });
 </script>
 {% endblock %}

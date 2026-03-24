@@ -89,6 +89,30 @@
         $('#foodTypesTable').DataTable({
             "order": [[ 0, "desc" ]]
         });
+
+        const snapshotUrl = "{{ url_for('admin.catalog_snapshot') }}";
+        let currentSnapshot = null;
+
+        async function syncCatalogFoodTypes() {
+            try {
+                const response = await fetch(snapshotUrl, { cache: 'no-store' });
+                if (!response.ok) return;
+                const data = await response.json();
+                const nextSnapshot = JSON.stringify([data.food_types_count, data.pending_food_types_count]);
+                if (currentSnapshot === null) {
+                    currentSnapshot = nextSnapshot;
+                    return;
+                }
+                if (nextSnapshot !== currentSnapshot) {
+                    location.reload();
+                }
+            } catch (e) {
+                // keep polling resilient
+            }
+        }
+
+        syncCatalogFoodTypes();
+        setInterval(syncCatalogFoodTypes, 5000);
     });
 </script>
 {% endblock %}

@@ -7,6 +7,30 @@ from datetime import datetime, timedelta
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+def serialize_order_event(order):
+    status = (order.status or '').strip().lower()
+    status_map = {
+        'pending': ('Pending', 'warning', 'placed'),
+        'accepted': ('Accepted', 'info', 'accepted'),
+        'preparing': ('Preparing', 'info', 'preparing'),
+        'out for delivery': ('Out for Delivery', 'primary', 'en_route'),
+        'delivered': ('Delivered', 'success', 'delivered'),
+        'completed': ('Completed', 'success', 'completed'),
+        'cancelled': ('Cancelled', 'danger', 'cancelled'),
+    }
+    label, tone, timeline_key = status_map.get(status, (status.title() if status else 'Unknown', 'secondary', 'unknown'))
+    return {
+        'id': order.id,
+        'status': status,
+        'status_label': label,
+        'status_tone': tone,
+        'timeline_key': timeline_key,
+        'restaurant_name': order.restaurant.name if order.restaurant else 'Restaurant',
+        'customer_name': order.customer.name if order.customer else 'Customer',
+        'total_amount': float(order.total_amount),
+        'order_date': order.order_date.isoformat() if order.order_date else None
+    }
+
 def admin_required(func):
     def wrapper(*args, **kwargs):
         if not current_user.is_authenticated or current_user.role != 'admin':
@@ -161,6 +185,12 @@ def all_orders():
     orders = Order.query.order_by(Order.order_date.desc()).all()
     return render_template('admin_orders.html', orders=orders)
 
+@bp.route('/api/orders/feed')
+@admin_required
+def orders_feed():
+    orders = Order.query.order_by(Order.order_date.desc()).limit(50).all()
+    return {'orders': [serialize_order_event(order) for order in orders]}
+
 @bp.route('/api/orders/notifications')
 @admin_required
 def order_notifications():
@@ -170,12 +200,35 @@ def order_notifications():
 
     payload = {'pending_count': pending_count, 'latest_order': None}
     if latest_order:
-        payload['latest_order'] = {
-            'id': latest_order.id,
-            'status': latest_order.status,
-            'restaurant_name': latest_order.restaurant.name if latest_order.restaurant else 'Restaurant',
-            'customer_name': latest_order.customer.name if latest_order.customer else 'Customer',
-            'total_amount': float(latest_order.total_amount),
-            'order_date': latest_order.order_date.isoformat() if latest_order.order_date else None
-        }
+        payload['latest_order'] = serialize_order_event(latest_order)
     return payload
+
+@bp.route('/api/food-types/pending-count')
+@admin_required
+def pending_food_types_count():
+    return {'pending_count': FoodType.query.filter_by(is_approved=False).count()}
+
+@bp.route('/api/catalog/snapshot')
+@admin_required
+def catalog_snapshot():
+    return {
+        'categories_count': Category.query.count(),
+        'food_types_count': FoodType.query.count(),
+        'pending_food_types_count': FoodType.query.filter_by(is_approved=False).count()
+    }
+
+@bp.route('/api/platform/health')
+@admin_required
+def platform_health():
+    now = datetime.now()
+    window_start = now - timedelta(minutes=30)
+    new_users = User.query.filter(User.created_at >= window_start).count()
+    new_restaurants = Restaurant.query.filter(Restaurant.created_at >= window_start).count()
+    new_orders = Order.query.filter(Order.order_date >= window_start).count()
+    return {
+        'window_minutes': 30,
+        'new_users': new_users,
+        'new_restaurants': new_restaurants,
+        'new_orders': new_orders,
+        'generated_at': now.isoformat()
+    }

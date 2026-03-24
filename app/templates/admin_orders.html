@@ -13,7 +13,7 @@
         <div class="table-responsive">
             <table class="table table-bordered" id="ordersTable" width="100%" cellspacing="0">
                 <thead>
-                    <tr>
+                    <tr data-order-id="{{ order.id }}">
                         <th>Order ID</th>
                         <th>Date</th>
                         <th>Customer</th>
@@ -30,7 +30,7 @@
                         <td>{{ order.user.name if order.user else 'Unknown' }}</td>
                         <td>{{ order.restaurant.name if order.restaurant else 'Unknown' }}</td>
                         <td class="font-weight-bold text-success">${{ "%.2f"|format(order.total_amount) }}</td>
-                        <td>
+                        <td class="admin-order-status-cell" data-order-id="{{ order.id }}" data-status="{{ order.status }}">
                             {% if order.status == 'pending' %}
                                 <span class="badge badge-warning px-2 py-1 text-white">Pending</span>
                             {% elif order.status == 'accepted' %}
@@ -57,11 +57,46 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='regfood/js/order_sync.js') }}"></script>
 <script>
     $(document).ready(function() {
         $('#ordersTable').DataTable({
             "order": [[ 0, "desc" ]] // Sort by newest order ID first
         });
+
+        const ordersFeedUrl = "{{ url_for('admin.orders_feed') }}";
+
+        function renderAdminStatus(eventData) {
+            if (window.OrderSync) {
+                return window.OrderSync.badgeHtml(eventData, { extraClass: 'px-2 py-1', forceWhiteText: true });
+            }
+            return `<span class="badge badge-secondary px-2 py-1 text-white">${eventData.status_label || eventData.status || 'Unknown'}</span>`;
+        }
+
+        async function syncAdminOrderStatuses() {
+            try {
+                const response = await fetch(ordersFeedUrl, { cache: 'no-store' });
+                if (!response.ok) return;
+                const data = await response.json();
+                const orders = Array.isArray(data.orders) ? data.orders : [];
+                const byId = {};
+                orders.forEach((o) => { byId[String(o.id)] = o; });
+
+                document.querySelectorAll('.admin-order-status-cell').forEach((cell) => {
+                    const orderId = cell.getAttribute('data-order-id');
+                    const currentStatus = (cell.getAttribute('data-status') || '').toLowerCase();
+                    const nextEvent = byId[orderId];
+                    if (!nextEvent || (nextEvent.status || '').toLowerCase() === currentStatus) return;
+                    cell.setAttribute('data-status', nextEvent.status || '');
+                    cell.innerHTML = renderAdminStatus(nextEvent);
+                });
+            } catch (e) {
+                // Keep polling resilient.
+            }
+        }
+
+        syncAdminOrderStatuses();
+        setInterval(syncAdminOrderStatuses, 5000);
     });
 </script>
 {% endblock %}

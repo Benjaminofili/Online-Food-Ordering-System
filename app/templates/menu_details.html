@@ -256,13 +256,15 @@
                                 <li><button type="submit" class="common_btn border-0">add to cart</button></li>
                                 {% set is_wishlisted = current_user.is_authenticated and current_user.is_wishlisted(dish.id) %}
                                 <li>
-                                    <form action="{{ url_for('customer.' + ('remove_from_wishlist' if is_wishlisted else 'add_to_wishlist'), dish_id=dish.id) }}" method="POST" class="d-inline-block">
-                                        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                        <button type="submit" class="common_btn border-0 {{ 'wishlisted-active' if is_wishlisted else '' }}">
-                                            <i class="{{ 'fas fa-heart' if is_wishlisted else 'fal fa-heart' }}"></i> 
-                                            {{ 'Wishlisted' if is_wishlisted else 'Wishlist' }}
-                                        </button>
-                                    </form>
+                                    <button
+                                        type="submit"
+                                        formaction="{{ url_for('customer.' + ('remove_from_wishlist' if is_wishlisted else 'add_to_wishlist'), dish_id=dish.id) }}"
+                                        formmethod="POST"
+                                        data-wishlist-dish-id="{{ dish.id }}"
+                                        class="common_btn border-0 {{ 'wishlisted-active' if is_wishlisted else '' }}">
+                                        <i class="{{ 'fas fa-heart' if is_wishlisted else 'fal fa-heart' }}"></i>
+                                        {{ 'Wishlisted' if is_wishlisted else 'Wishlist' }}
+                                    </button>
                                 </li>
                             </ul>
                             <style>
@@ -477,7 +479,7 @@
                                         {% set related_wishlisted = current_user.is_authenticated and current_user.is_wishlisted(related.id) %}
                                         <form action="{{ url_for('customer.' + ('remove_from_wishlist' if related_wishlisted else 'add_to_wishlist'), dish_id=related.id) }}" method="POST" style="display:inline;">
                                             {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                            <button type="submit" title="{{ 'Remove from Wishlist' if related_wishlisted else 'Add to Wishlist' }}" class="border-0 bg-transparent" style="width:100%; height:100%; color:inherit;">
+                                            <button type="submit" data-wishlist-dish-id="{{ related.id }}" title="{{ 'Remove from Wishlist' if related_wishlisted else 'Add to Wishlist' }}" class="border-0 bg-transparent" style="width:100%; height:100%; color:inherit;">
                                                 <i class="{{ 'fas fa-heart text-danger' if related_wishlisted else 'fal fa-heart' }}"></i>
                                             </button>
                                         </form>

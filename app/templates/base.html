@@ -82,6 +82,14 @@
                     </li>
                 </ul>
                 <ul class="menu_icon d-flex flex-wrap">
+                    {% if current_user.is_authenticated and current_user.role == 'customer' %}
+                    <li>
+                        <a href="#" id="customerNotificationToggle" title="Notifications" style="position: relative;">
+                            <i class="fas fa-bell"></i>
+                            <span id="customerNotificationBadge" style="display:none; position:absolute; top:-8px; right:-10px; background:#ff7c08; color:#fff; border-radius:999px; min-width:18px; height:18px; line-height:18px; font-size:11px; text-align:center; padding:0 5px;">0</span>
+                        </a>
+                    </li>
+                    {% endif %}
                     <li>
                         <a href="{{ url_for('customer.view_wishlist') }}"><i class="fal fa-heart"></i></a>
                     </li>
@@ -121,6 +129,12 @@
     <div class="flash-messages-global">
         {% include 'partials/flash_messages.html' %}
     </div>
+    {% if current_user.is_authenticated and current_user.role == 'customer' %}
+    <div id="customerNotificationCenter" style="display:none; position: fixed; top: 85px; right: 20px; width: 340px; max-height: 420px; overflow:auto; background:#fff; border:1px solid #eee; border-radius:10px; box-shadow:0 12px 30px rgba(0,0,0,0.14); z-index: 2100;">
+        <div style="padding:12px 14px; border-bottom:1px solid #f0f0f0; font-weight:700;">Notifications</div>
+        <div id="customerNotificationItems" style="padding:10px 14px; font-size:14px; color:#333;">No recent notifications.</div>
+    </div>
+    {% endif %}
 
     {% block content %}{% endblock %}
 
@@ -473,11 +487,18 @@
     (function () {
         const orderBadge = document.getElementById('customerOrderBadge');
         const orderBadgeMobile = document.getElementById('customerOrderBadgeMobile');
-        const apiUrl = "{{ url_for('customer.api_active_orders') }}";
-        const storageKey = 'customerActiveOrdersState';
-        const noticeKey = 'customerLastOrderNoticeTs';
+        const cartCountEl = document.getElementById('cart_count');
+        const apiOrdersUrl = "{{ url_for('customer.api_orders_feed') }}";
+        const apiStateUrl = "{{ url_for('customer.api_sync_state') }}";
+        const storageKey = 'customerOrderState';
+        const feedKey = 'customerNotificationFeed';
+        const noticeBadge = document.getElementById('customerNotificationBadge');
+        const noticePanel = document.getElementById('customerNotificationCenter');
+        const noticeItems = document.getElementById('customerNotificationItems');
+        const noticeToggle = document.getElementById('customerNotificationToggle');
+        const MAX_NOTICES = 20;
 
-        function setBadgeCount(count) {
+        function setOrderBadgeCount(count) {
             [orderBadge, orderBadgeMobile].forEach((badge) => {
                 if (!badge) return;
                 if (count > 0) {
@@ -489,28 +510,103 @@
             });
         }
 
-        function showStatusNotice(message) {
-            const now = Date.now();
-            const lastShown = Number(localStorage.getItem(noticeKey) || 0);
-            if (now - lastShown < 3000) return;
-            localStorage.setItem(noticeKey, String(now));
-            if (window.alert) window.alert(message);
+        function addNotification(text) {
+            const now = new Date().toLocaleTimeString();
+            let items = [];
+            try {
+                items = JSON.parse(localStorage.getItem(feedKey) || '[]');
+            } catch (e) {
+                items = [];
+            }
+            items.unshift({ text, ts: now });
+            items = items.slice(0, MAX_NOTICES);
+            localStorage.setItem(feedKey, JSON.stringify(items));
+            renderNotificationFeed(items);
         }
 
-        async function pollCustomerOrders() {
+        function renderNotificationFeed(items) {
+            if (!noticeItems) return;
+            if (!items || items.length === 0) {
+                noticeItems.innerHTML = 'No recent notifications.';
+            } else {
+                noticeItems.innerHTML = items.map((item) => `
+                    <div style="padding:8px 0; border-bottom:1px solid #f2f2f2;">
+                        <div style="font-weight:600; color:#231f40;">${item.text}</div>
+                        <div style="font-size:12px; color:#888;">${item.ts}</div>
+                    </div>
+                `).join('');
+            }
+            if (noticeBadge) {
+                const count = items.length;
+                if (count > 0) {
+                    noticeBadge.style.display = 'inline-block';
+                    noticeBadge.textContent = count > 99 ? '99+' : String(count);
+                } else {
+                    noticeBadge.style.display = 'none';
+                }
+            }
+        }
+
+        function syncWishlistIcons(wishlistIds) {
+            const ids = new Set((wishlistIds || []).map((x) => Number(x)));
+            document.querySelectorAll('[data-wishlist-dish-id]').forEach((btn) => {
+                const dishId = Number(btn.getAttribute('data-wishlist-dish-id'));
+                const icon = btn.querySelector('i');
+                const form = btn.closest('form');
+                const isWishlisted = ids.has(dishId);
+                if (icon) {
+                    icon.className = isWishlisted ? 'fas fa-heart text-danger' : 'fal fa-heart';
+                }
+                btn.setAttribute('title', isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist');
+                if (form) {
+                    form.action = isWishlisted
+                        ? `{{ url_for('customer.remove_from_wishlist', dish_id=0) }}`.replace('/0', `/${dishId}`)
+                        : `{{ url_for('customer.add_to_wishlist', dish_id=0) }}`.replace('/0', `/${dishId}`);
+                }
+            });
+        }
+
+        function syncCouponPanel(data) {
+            const panel = document.getElementById('couponSyncPanel');
+            if (!panel) return;
+            const status = data.coupon_status;
+            if (!status) {
+                panel.innerHTML = '';
+                return;
+            }
+            let cls = 'info';
+            if (status.state === 'applied') cls = 'success';
+            if (status.state === 'expired' || status.state === 'invalid') cls = 'warning';
+            panel.innerHTML = `<div class="alert alert-${cls} py-2 mb-2"><i class="fas fa-info-circle mr-1"></i>${status.message}</div>`;
+        }
+
+        async function pollCustomerSync() {
             try {
-                const response = await fetch(apiUrl, { cache: 'no-store' });
-                if (!response.ok) return;
-                const data = await response.json();
-                const orders = Array.isArray(data.orders) ? data.orders : [];
-                setBadgeCount(orders.length);
+                const [ordersRes, stateRes] = await Promise.all([
+                    fetch(apiOrdersUrl, { cache: 'no-store' }),
+                    fetch(apiStateUrl, { cache: 'no-store' })
+                ]);
+                if (!ordersRes.ok || !stateRes.ok) return;
+                const ordersData = await ordersRes.json();
+                const stateData = await stateRes.json();
+
+                const orders = Array.isArray(ordersData.orders) ? ordersData.orders : [];
+                setOrderBadgeCount(orders.length);
+
+                if (cartCountEl) {
+                    cartCountEl.textContent = String(stateData.cart_count || 0);
+                }
+                syncWishlistIcons(stateData.wishlist_ids || []);
+                syncCouponPanel(stateData);
 
                 const previous = JSON.parse(localStorage.getItem(storageKey) || '{}');
                 const current = {};
                 for (const order of orders) {
                     current[String(order.id)] = order.status || '';
-                    if (previous[String(order.id)] && previous[String(order.id)] !== (order.status || '')) {
-                        showStatusNotice(`Order #${order.id} updated: ${order.status}`);
+                    if (!previous[String(order.id)]) {
+                        addNotification(`Order #${order.id} is ${order.status}`);
+                    } else if (previous[String(order.id)] !== (order.status || '')) {
+                        addNotification(`Order #${order.id} updated: ${order.status}`);
                     }
                 }
                 localStorage.setItem(storageKey, JSON.stringify(current));
@@ -519,11 +615,50 @@
             }
         }
 
-        pollCustomerOrders();
-        setInterval(pollCustomerOrders, 5000);
+        if (noticeToggle && noticePanel) {
+            noticeToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                const visible = noticePanel.style.display === 'block';
+                noticePanel.style.display = visible ? 'none' : 'block';
+            });
+            document.addEventListener('click', (e) => {
+                if (!noticePanel.contains(e.target) && !noticeToggle.contains(e.target)) {
+                    noticePanel.style.display = 'none';
+                }
+            });
+        }
+
+        try {
+            renderNotificationFeed(JSON.parse(localStorage.getItem(feedKey) || '[]'));
+        } catch (e) {
+            renderNotificationFeed([]);
+        }
+
+        pollCustomerSync();
+        setInterval(pollCustomerSync, 5000);
+        window.addEventListener('customer-sync-pulse', pollCustomerSync);
     })();
     </script>
     {% endif %}
+
+    <script>
+    (function () {
+        // Broadcast local customer actions so other open tabs update instantly.
+        document.addEventListener('submit', function (e) {
+            const form = e.target;
+            if (!form || !form.action) return;
+            if (form.action.includes('/cart/') || form.action.includes('/wishlist/')) {
+                localStorage.setItem('customerSyncPulse', String(Date.now()));
+            }
+        });
+        window.addEventListener('storage', function (e) {
+            if (e.key === 'customerSyncPulse') {
+                const event = new CustomEvent('customer-sync-pulse');
+                window.dispatchEvent(event);
+            }
+        });
+    })();
+    </script>
 
     {% block scripts %}{% endblock %}
 

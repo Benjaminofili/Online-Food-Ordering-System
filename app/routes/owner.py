@@ -1,13 +1,37 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_login import login_required, current_user
 from app import db
-from app.models import Restaurant, Dish, Order, Category, FoodType, Coupon, OrderItem, RestaurantMedia
+from app.models import Restaurant, Dish, Order, Category, FoodType, Coupon, OrderItem, RestaurantMedia, Review
 from app.utils import upload_file_to_cloudinary
 from datetime import datetime, timedelta
 from sqlalchemy import func
 from spellchecker import SpellChecker
 
 bp = Blueprint('owner', __name__, url_prefix='/owner')
+
+def serialize_order_event(order):
+    status = (order.status or '').strip().lower()
+    status_map = {
+        'pending': ('Pending', 'warning', 'placed'),
+        'accepted': ('Accepted', 'info', 'accepted'),
+        'preparing': ('Preparing', 'info', 'preparing'),
+        'out for delivery': ('Out for Delivery', 'primary', 'en_route'),
+        'delivered': ('Delivered', 'success', 'delivered'),
+        'completed': ('Completed', 'success', 'completed'),
+        'cancelled': ('Cancelled', 'danger', 'cancelled'),
+    }
+    label, tone, timeline_key = status_map.get(status, (status.title() if status else 'Unknown', 'secondary', 'unknown'))
+    return {
+        'id': order.id,
+        'status': status,
+        'status_label': label,
+        'status_tone': tone,
+        'timeline_key': timeline_key,
+        'total_amount': float(order.total_amount),
+        'order_date': order.order_date.isoformat() if order.order_date else None,
+        'customer_name': order.customer.name if order.customer else 'Customer',
+        'restaurant_name': order.restaurant.name if order.restaurant else 'Restaurant'
+    }
 
 spell = SpellChecker()
 
@@ -292,14 +316,7 @@ def order_notifications():
         status='pending'
     ).order_by(Order.order_date.desc()).first()
 
-    latest_order = None
-    if latest_pending:
-        latest_order = {
-            'id': latest_pending.id,
-            'customer_name': latest_pending.customer.name if latest_pending.customer else 'Customer',
-            'total_amount': float(latest_pending.total_amount),
-            'order_date': latest_pending.order_date.isoformat() if latest_pending.order_date else None,
-        }
+    latest_order = serialize_order_event(latest_pending) if latest_pending else None
 
     return {
         'pending_count': pending_count,
@@ -315,14 +332,71 @@ def orders_feed():
         return {'orders': []}
 
     orders = Order.query.filter_by(restaurant_id=restaurant.id).order_by(Order.order_date.desc()).limit(30).all()
+    return {'orders': [serialize_order_event(o) for o in orders]}
+
+@bp.route('/api/coupons/feed')
+@owner_required
+def coupons_feed():
+    restaurant = get_restaurant()
+    if not restaurant:
+        return {'coupons': []}
+    coupons = Coupon.query.filter_by(restaurant_id=restaurant.id).all()
     return {
-        'orders': [{
-            'id': o.id,
-            'status': o.status,
-            'total_amount': float(o.total_amount),
-            'order_date': o.order_date.isoformat() if o.order_date else None
-        } for o in orders]
+        'coupons': [{
+            'id': c.id,
+            'code': c.code,
+            'discount_type': c.discount_type,
+            'discount_value': float(c.discount_value),
+            'is_active': bool(c.is_active),
+            'valid_until': c.valid_until.isoformat() if c.valid_until else None
+        } for c in coupons]
     }
+
+@bp.route('/api/media/feed')
+@owner_required
+def media_feed():
+    restaurant = get_restaurant()
+    if not restaurant:
+        return {'menu_count': 0, 'promo_count': 0, 'video_count': 0}
+    menu_count = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='menu_image').count()
+    promo_count = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='promo_image').count()
+    video_count = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='video').count()
+    return {'menu_count': menu_count, 'promo_count': promo_count, 'video_count': video_count}
+
+@bp.route('/api/dishes/feed')
+@owner_required
+def dishes_feed():
+    restaurant = get_restaurant()
+    if not restaurant:
+        return {'dishes': []}
+    dishes = Dish.query.filter_by(restaurant_id=restaurant.id).all()
+    return {
+        'dishes': [{
+            'id': d.id,
+            'name': d.name,
+            'price': float(d.price),
+            'is_available': bool(d.is_available)
+        } for d in dishes]
+    }
+
+@bp.route('/api/reviews/notifications')
+@owner_required
+def reviews_notifications():
+    restaurant = get_restaurant()
+    if not restaurant:
+        return {'latest_review': None, 'review_count': 0}
+    review_count = Review.query.filter_by(restaurant_id=restaurant.id).count()
+    latest = Review.query.filter_by(restaurant_id=restaurant.id).order_by(Review.created_at.desc()).first()
+    latest_review = None
+    if latest:
+        latest_review = {
+            'id': latest.id,
+            'rating': latest.rating,
+            'comment': latest.comment,
+            'customer_name': latest.customer.name if latest.customer else 'Customer',
+            'created_at': latest.created_at.isoformat() if latest.created_at else None
+        }
+    return {'latest_review': latest_review, 'review_count': review_count}
 
 @bp.route('/orders/update/<int:id>', methods=['POST'])
 @owner_required
@@ -377,6 +451,9 @@ def add_coupon():
     discount_value = request.form.get('discount_value')
     valid_until_str = request.form.get('valid_until')
     is_active = request.form.get('is_active') == 'on'
+
+    if discount_type == 'percentage':
+        discount_type = 'percent'
 
     if Coupon.query.filter_by(restaurant_id=restaurant.id, code=code).first():
         flash('A coupon with this code already exists for your restaurant.', 'danger')

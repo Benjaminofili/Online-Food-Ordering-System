@@ -65,6 +65,7 @@
                     <div id="sticky_sidebar" class="cart_list_footer_button">
                         <div class="cart_list_footer_button_text">
                             <h6>Order Summary</h6>
+                            <div id="couponSyncPanel"></div>
                             {% if original_total is defined %}
                             <p>subtotal: <span>${{ "%.2f"|format(original_total) }}</span></p>
                             {% if discount_amount %}

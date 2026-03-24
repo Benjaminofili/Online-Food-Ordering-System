@@ -8,6 +8,30 @@ from sqlalchemy import func, select
 
 bp = Blueprint('customer', __name__, url_prefix='/customer')
 
+def serialize_order_event(order):
+    status = (order.status or '').strip().lower()
+    status_map = {
+        'pending': ('Pending', 'warning', 'placed'),
+        'accepted': ('Accepted', 'info', 'accepted'),
+        'preparing': ('Preparing', 'info', 'preparing'),
+        'out for delivery': ('Out for Delivery', 'primary', 'en_route'),
+        'delivered': ('Delivered', 'success', 'delivered'),
+        'completed': ('Completed', 'success', 'completed'),
+        'cancelled': ('Cancelled', 'danger', 'cancelled'),
+    }
+    label, tone, timeline_key = status_map.get(status, (status.title() if status else 'Unknown', 'secondary', 'unknown'))
+    return {
+        'id': order.id,
+        'status': status,
+        'status_label': label,
+        'status_tone': tone,
+        'timeline_key': timeline_key,
+        'delivery_time': order.delivery_time.strftime('%I:%M %p') if order.delivery_time else None,
+        'total_amount': float(order.total_amount),
+        'order_date': order.order_date.isoformat() if order.order_date else None,
+        'restaurant_name': order.restaurant.name if order.restaurant else None
+    }
+
 def _is_ajax():
     """Detect AJAX requests reliably."""
     return (request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
@@ -291,7 +315,7 @@ def view_cart():
                 applied_coupon = coupon
                 # Simple logic for cart view: apply to total if rest matches
                 rest_total = sum(item['subtotal'] for item in cart_items if item['dish'].restaurant_id == coupon.restaurant_id)
-                if coupon.discount_type == 'percent':
+                if coupon.discount_type in ['percent', 'percentage']:
                     discount_amount = rest_total * (float(coupon.discount_value) / 100.0)
                 else:
                     discount_amount = float(coupon.discount_value)
@@ -421,7 +445,7 @@ def apply_coupon():
             for did, qty in cart.items()
             if db.session.get(Dish, int(did)) and db.session.get(Dish, int(did)).restaurant_id == coupon.restaurant_id
         )
-        if coupon.discount_type == 'percent':
+        if coupon.discount_type in ['percent', 'percentage']:
             discount_amount = rest_total * (float(coupon.discount_value) / 100.0)
         else:
             discount_amount = float(coupon.discount_value)
@@ -467,7 +491,7 @@ def checkout():
         if coupon and coupon.is_active and (not coupon.valid_until or coupon.valid_until >= datetime.now()) and coupon.restaurant_id in orders_data:
             applied_coupon = coupon
             rest_total = orders_data[coupon.restaurant_id]['total']
-            if coupon.discount_type == 'percent':
+            if coupon.discount_type in ['percent', 'percentage']:
                 discount_amount = rest_total * (float(coupon.discount_value) / 100.0)
             else:
                 discount_amount = float(coupon.discount_value)
@@ -508,6 +532,7 @@ def checkout():
         db.session.commit()
         session.pop('cart', None)
         session.pop('applied_coupon_id', None)
+        session.modified = True
         flash('Order(s) placed successfully!', 'success')
         return redirect(url_for('customer.my_orders'))
         
@@ -567,24 +592,70 @@ def api_active_orders():
         Order.status.in_(['pending', 'accepted', 'preparing', 'out for delivery'])
     ).all()
     
-    return {'orders': [{
-        'id': o.id, 
-        'status': o.status,
-        'delivery_time': o.delivery_time.strftime('%I:%M %p') if o.delivery_time else None
-    } for o in orders]}
+    return {'orders': [serialize_order_event(o) for o in orders]}
 
 @bp.route('/api/my-orders/feed')
 @customer_required
 def api_orders_feed():
     """Return recent customer orders for lifecycle synchronization."""
     orders = Order.query.filter_by(customer_id=current_user.id).order_by(Order.order_date.desc()).limit(20).all()
+    return {'orders': [serialize_order_event(o) for o in orders]}
+
+@bp.route('/api/sync-state')
+@customer_required
+def api_sync_state():
+    """Unified customer UI sync payload for cart, wishlist, and coupon panels."""
+    cart = session.get('cart', {})
+    cart_count = sum(cart.values()) if cart else 0
+
+    wishlist_rows = Wishlist.query.filter_by(user_id=current_user.id).all()
+    wishlist_ids = [w.dish_id for w in wishlist_rows]
+
+    cart_items = []
+    total = 0.0
+    for dish_id_str, qty in cart.items():
+        dish = db.session.get(Dish, int(dish_id_str))
+        if dish:
+            subtotal = float(dish.price) * qty
+            total += subtotal
+            cart_items.append({'dish': dish, 'quantity': qty, 'subtotal': subtotal})
+
+    coupon_status = None
+    discount_amount = 0.0
+    coupon_id = session.get('applied_coupon_id')
+    if coupon_id:
+        coupon = db.session.get(Coupon, coupon_id)
+        if not coupon:
+            coupon_status = {'state': 'invalid', 'message': 'Coupon no longer exists.'}
+        elif not coupon.is_active:
+            coupon_status = {'state': 'invalid', 'message': 'Coupon is inactive.'}
+        elif coupon.valid_until and coupon.valid_until < datetime.now():
+            coupon_status = {'state': 'expired', 'message': 'Coupon has expired.'}
+        else:
+            rest_total = sum(item['subtotal'] for item in cart_items if item['dish'].restaurant_id == coupon.restaurant_id)
+            if rest_total <= 0:
+                coupon_status = {'state': 'invalid', 'message': 'Coupon does not match current cart restaurants.'}
+            else:
+                if coupon.discount_type in ['percent', 'percentage']:
+                    discount_amount = rest_total * (float(coupon.discount_value) / 100.0)
+                else:
+                    discount_amount = float(coupon.discount_value)
+                discount_amount = min(discount_amount, rest_total)
+                coupon_status = {
+                    'state': 'applied',
+                    'message': f'Coupon {coupon.code} applied.',
+                    'code': coupon.code
+                }
+
+    final_total = max(0.0, total - discount_amount)
     return {
-        'orders': [{
-            'id': o.id,
-            'status': o.status,
-            'total_amount': float(o.total_amount),
-            'order_date': o.order_date.isoformat() if o.order_date else None
-        } for o in orders]
+        'cart_count': cart_count,
+        'wishlist_count': len(wishlist_ids),
+        'wishlist_ids': wishlist_ids,
+        'coupon_status': coupon_status,
+        'discount_amount': round(discount_amount, 2),
+        'total': round(total, 2),
+        'final_total': round(final_total, 2)
     }
 
 # ── Static Pages ─────────────────────────────────────────────────────────────

@@ -341,6 +341,12 @@
 
         <!-- User Dropdown -->
         <ul class="navbar-nav ml-auto ml-md-0">
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="ownerNotificationToggle" title="Notifications" style="position:relative;">
+                    <i class="fas fa-bell"></i>
+                    <span id="ownerNotificationBadge" style="display:none; position:absolute; top:2px; right:0; background:#ff7c08; color:#fff; border-radius:999px; min-width:16px; height:16px; line-height:16px; font-size:10px; text-align:center; padding:0 4px;">0</span>
+                </a>
+            </li>
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" id="userDropdown" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <i class="fas fa-user-circle fa-fw" style="color: var(--admin-primary);"></i>
@@ -431,6 +437,10 @@
             <main>
                 <div class="container-fluid py-4 position-relative">
                     <div id="ownerRealtimeNotice" style="position: fixed; top: 1rem; right: 1rem; z-index: 1100; min-width: 300px; max-width: 420px;"></div>
+                    <div id="ownerNotificationCenter" style="display:none; position:fixed; top:65px; right:20px; width:340px; max-height:420px; overflow:auto; background:#fff; border:1px solid #eee; border-radius:10px; box-shadow:0 12px 30px rgba(0,0,0,0.14); z-index:2100;">
+                        <div style="padding:12px 14px; border-bottom:1px solid #f0f0f0; font-weight:700; color:#231f40;">Owner Notifications</div>
+                        <div id="ownerNotificationItems" style="padding:10px 14px; font-size:14px; color:#333;">No recent notifications.</div>
+                    </div>
                     <!-- Unified Flash Messages -->
                     <div id="flash-container" style="position: absolute; top: 1rem; right: 1rem; z-index: 1050; min-width: 300px;">
                         {% include 'partials/flash_messages.html' %}
@@ -468,6 +478,13 @@
         const pendingBadge = document.getElementById('ownerPendingBadge');
         const realtimeNotice = document.getElementById('ownerRealtimeNotice');
         const notificationsApiUrl = "{{ url_for('owner.order_notifications') }}";
+        const reviewApiUrl = "{{ url_for('owner.reviews_notifications') }}";
+        const ownerNoticeToggle = document.getElementById('ownerNotificationToggle');
+        const ownerNoticeBadge = document.getElementById('ownerNotificationBadge');
+        const ownerNoticePanel = document.getElementById('ownerNotificationCenter');
+        const ownerNoticeItems = document.getElementById('ownerNotificationItems');
+        const ownerNoticeStorageKey = 'ownerNotificationFeed';
+        const maxOwnerNotices = 25;
         let hasBootstrappedPolling = false;
 
         const currentTheme = localStorage.getItem('adminTheme') || 'dark';
@@ -489,6 +506,39 @@
             }
         });
 
+        function renderOwnerNoticeFeed(items) {
+            if (!ownerNoticeItems) return;
+            if (!items || items.length === 0) {
+                ownerNoticeItems.innerHTML = 'No recent notifications.';
+            } else {
+                ownerNoticeItems.innerHTML = items.map((n) => `
+                    <div style="padding:8px 0; border-bottom:1px solid #f2f2f2;">
+                        <div style="font-weight:600; color:#231f40;">${n.text}</div>
+                        <div style="font-size:12px; color:#888;">${n.ts}</div>
+                    </div>
+                `).join('');
+            }
+            if (ownerNoticeBadge) {
+                const count = (items || []).length;
+                if (count > 0) {
+                    ownerNoticeBadge.style.display = 'inline-block';
+                    ownerNoticeBadge.textContent = count > 99 ? '99+' : String(count);
+                } else {
+                    ownerNoticeBadge.style.display = 'none';
+                }
+            }
+        }
+
+        function addOwnerNotice(text) {
+            const ts = new Date().toLocaleTimeString();
+            let items = [];
+            try { items = JSON.parse(localStorage.getItem(ownerNoticeStorageKey) || '[]'); } catch (e) { items = []; }
+            items.unshift({ text, ts });
+            items = items.slice(0, maxOwnerNotices);
+            localStorage.setItem(ownerNoticeStorageKey, JSON.stringify(items));
+            renderOwnerNoticeFeed(items);
+        }
+
         function showRealtimeOrderNotice(order) {
             if (!realtimeNotice || !order) return;
             const html = `
@@ -507,6 +557,7 @@
                 </div>
             `;
             realtimeNotice.innerHTML = html;
+            addOwnerNotice(`New order #${order.id} from ${order.customer_name}`);
         }
 
         async function pollOwnerNotifications() {
@@ -538,6 +589,23 @@
                         localStorage.setItem(storageKey, String(latestId));
                     }
                 }
+
+                const reviewResponse = await fetch(reviewApiUrl, { cache: 'no-store' });
+                if (reviewResponse.ok) {
+                    const reviewData = await reviewResponse.json();
+                    const latestReview = reviewData.latest_review;
+                    if (latestReview && latestReview.id) {
+                        const reviewStorageKey = 'ownerLastSeenReviewId';
+                        const lastSeenReview = Number(localStorage.getItem(reviewStorageKey) || 0);
+                        const latestReviewId = Number(latestReview.id);
+                        if (!hasBootstrappedPolling) {
+                            localStorage.setItem(reviewStorageKey, String(Math.max(lastSeenReview, latestReviewId)));
+                        } else if (latestReviewId > lastSeenReview) {
+                            addOwnerNotice(`New ${latestReview.rating}-star review from ${latestReview.customer_name}`);
+                            localStorage.setItem(reviewStorageKey, String(latestReviewId));
+                        }
+                    }
+                }
                 hasBootstrappedPolling = true;
             } catch (err) {
                 // Silent fail to avoid disrupting owner workflow on transient network issues.
@@ -546,6 +614,22 @@
 
         pollOwnerNotifications();
         setInterval(pollOwnerNotifications, 5000);
+        if (ownerNoticeToggle && ownerNoticePanel) {
+            ownerNoticeToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                ownerNoticePanel.style.display = ownerNoticePanel.style.display === 'block' ? 'none' : 'block';
+            });
+            document.addEventListener('click', function(e) {
+                if (!ownerNoticePanel.contains(e.target) && !ownerNoticeToggle.contains(e.target)) {
+                    ownerNoticePanel.style.display = 'none';
+                }
+            });
+        }
+        try {
+            renderOwnerNoticeFeed(JSON.parse(localStorage.getItem(ownerNoticeStorageKey) || '[]'));
+        } catch (e) {
+            renderOwnerNoticeFeed([]);
+        }
     });
     </script>
     

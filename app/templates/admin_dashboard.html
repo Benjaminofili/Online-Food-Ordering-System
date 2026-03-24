@@ -84,6 +84,24 @@
     </div>
 </div>
 
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Platform Health (Last 30 Minutes)</h6>
+            </div>
+            <div class="card-body">
+                <div id="platformHealthRow" class="d-flex flex-wrap" style="gap: 12px;">
+                    <span class="badge badge-dark p-2">New Users: <strong id="healthUsers">0</strong></span>
+                    <span class="badge badge-dark p-2">New Restaurants: <strong id="healthRestaurants">0</strong></span>
+                    <span class="badge badge-dark p-2">New Orders: <strong id="healthOrders">0</strong></span>
+                    <span class="badge badge-secondary p-2">Updated: <strong id="healthUpdatedAt">-</strong></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Charts Row -->
 <div class="row">
     <!-- Area Chart -->
@@ -119,6 +137,30 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    const platformHealthUrl = "{{ url_for('admin.platform_health') }}";
+    async function pollPlatformHealth() {
+        try {
+            const response = await fetch(platformHealthUrl, { cache: 'no-store' });
+            if (!response.ok) return;
+            const data = await response.json();
+            const usersEl = document.getElementById('healthUsers');
+            const restaurantsEl = document.getElementById('healthRestaurants');
+            const ordersEl = document.getElementById('healthOrders');
+            const updatedAtEl = document.getElementById('healthUpdatedAt');
+            if (usersEl) usersEl.textContent = data.new_users ?? 0;
+            if (restaurantsEl) restaurantsEl.textContent = data.new_restaurants ?? 0;
+            if (ordersEl) ordersEl.textContent = data.new_orders ?? 0;
+            if (updatedAtEl) {
+                const dt = data.generated_at ? new Date(data.generated_at) : null;
+                updatedAtEl.textContent = dt ? dt.toLocaleTimeString() : '-';
+            }
+        } catch (e) {
+            // Keep dashboard stable on polling errors.
+        }
+    }
+    pollPlatformHealth();
+    setInterval(pollPlatformHealth, 5000);
+
     // Area Chart - Weekly Revenue
     var ctxArea = document.getElementById("myAreaChart");
     var myLineChart = new Chart(ctxArea, {

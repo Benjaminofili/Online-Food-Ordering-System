@@ -32,7 +32,7 @@
                     <div class="form-group">
                         <label for="discount_type">Discount Type *</label>
                         <select class="form-control custom-select" id="discount_type" name="discount_type" required>
-                            <option value="percentage">Percentage (%)</option>
+                            <option value="percent">Percentage (%)</option>
                             <option value="fixed">Fixed Amount ($)</option>
                         </select>
                     </div>
@@ -86,7 +86,7 @@
                             <tr>
                                 <td><strong class="text-primary">{{ coupon.code }}</strong></td>
                                 <td>
-                                    {% if coupon.discount_type == 'percentage' %}
+                                    {% if coupon.discount_type in ['percent', 'percentage'] %}
                                         {{ coupon.discount_value }}% Off
                                     {% else %}
                                         ${{ "%.2f"|format(coupon.discount_value|float) }} Off
@@ -149,6 +149,33 @@ $(document).ready(function() {
             }
         });
     }
+
+    const couponsFeedUrl = "{{ url_for('owner.coupons_feed') }}";
+    function buildSnapshot(coupons) {
+        return JSON.stringify((coupons || []).map(c => [c.id, c.code, c.discount_type, c.discount_value, c.is_active, c.valid_until]));
+    }
+    let initialSnapshot = null;
+
+    async function syncCouponsLifecycle() {
+        try {
+            const response = await fetch(couponsFeedUrl, { cache: 'no-store' });
+            if (!response.ok) return;
+            const data = await response.json();
+            const snapshot = buildSnapshot(data.coupons || []);
+            if (initialSnapshot === null) {
+                initialSnapshot = snapshot;
+                return;
+            }
+            if (snapshot !== initialSnapshot) {
+                location.reload();
+            }
+        } catch (e) {
+            // keep polling resilient
+        }
+    }
+
+    syncCouponsLifecycle();
+    setInterval(syncCouponsLifecycle, 5000);
 });
 </script>
 {% endblock %}

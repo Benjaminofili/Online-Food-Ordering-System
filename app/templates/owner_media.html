@@ -211,5 +211,29 @@ document.getElementById('imageFile')?.addEventListener('change', function(e) {
     var label = this.nextElementSibling;
     label.textContent = e.target.files[0]?.name || 'Choose file...';
 });
+
+const mediaFeedUrl = "{{ url_for('owner.media_feed') }}";
+let mediaSnapshot = null;
+
+async function syncMediaGallery() {
+    try {
+        const response = await fetch(mediaFeedUrl, { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        const snapshot = JSON.stringify([data.menu_count, data.promo_count, data.video_count]);
+        if (mediaSnapshot === null) {
+            mediaSnapshot = snapshot;
+            return;
+        }
+        if (snapshot !== mediaSnapshot) {
+            location.reload();
+        }
+    } catch (e) {
+        // keep polling resilient
+    }
+}
+
+syncMediaGallery();
+setInterval(syncMediaGallery, 5000);
 </script>
 {% endblock %}

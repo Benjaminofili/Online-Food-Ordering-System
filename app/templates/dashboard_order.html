@@ -291,6 +291,7 @@
 
     <!--jquery library js-->
     <script src="{{ url_for('static', filename='regfood/js/jquery-3.6.0.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='regfood/js/order_sync.js') }}"></script>
     <!--bootstrap js-->
     <script src="{{ url_for('static', filename='regfood/js/bootstrap.bundle.min.js') }}"></script>
     <!--font-awesome js-->
@@ -552,17 +553,21 @@
                 const data = await response.json();
                 const orders = Array.isArray(data.orders) ? data.orders : [];
                 const byId = {};
-                orders.forEach((o) => { byId[String(o.id)] = o.status; });
+                orders.forEach((o) => { byId[String(o.id)] = o; });
 
                 document.querySelectorAll('.customer-order-status-cell').forEach((cell) => {
                     const orderId = cell.getAttribute('data-order-id');
                     const currentStatus = cell.getAttribute('data-status');
-                    const nextStatus = byId[orderId];
-                    if (!nextStatus || nextStatus === currentStatus) return;
+                    const nextEvent = byId[orderId];
+                    if (!nextEvent || nextEvent.status === currentStatus) return;
 
-                    cell.setAttribute('data-status', nextStatus);
-                    cell.innerHTML = `<span class="${nextStatus}">${nextStatus}</span>`;
-                    showNotice(`Order #${orderId} updated to "${nextStatus}".`);
+                    cell.setAttribute('data-status', nextEvent.status);
+                    if (window.OrderSync) {
+                        cell.innerHTML = window.OrderSync.badgeHtml(nextEvent);
+                    } else {
+                        cell.innerHTML = `<span class="badge badge-secondary">${nextEvent.status_label || nextEvent.status}</span>`;
+                    }
+                    showNotice(`Order #${orderId} updated to "${nextEvent.status_label || nextEvent.status}".`);
                 });
             } catch (e) {
                 // Keep polling resilient.
