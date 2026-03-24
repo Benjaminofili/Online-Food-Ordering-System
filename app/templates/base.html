@@ -85,6 +85,14 @@
                     <li>
                         <a href="{{ url_for('customer.view_wishlist') }}"><i class="fal fa-heart"></i></a>
                     </li>
+                    {% if current_user.is_authenticated and current_user.role == 'customer' %}
+                    <li>
+                        <a href="{{ url_for('customer.my_orders') }}" title="My Orders" style="position: relative;">
+                            <i class="fas fa-bags-shopping"></i>
+                            <span id="customerOrderBadge" style="display:none; position:absolute; top:-8px; right:-10px; background:#ff7c08; color:#fff; border-radius:999px; min-width:18px; height:18px; line-height:18px; font-size:11px; text-align:center; padding:0 5px;">0</span>
+                        </a>
+                    </li>
+                    {% endif %}
                     <li>
                         <a class="cart_icon" href="{{ url_for('customer.view_cart') }}"><i class="fas fa-shopping-basket"></i>
                             <span id="cart_count">{{ session.get('cart', {}).values()|sum if session.get('cart') else 0 }}</span></a>
@@ -255,6 +263,13 @@
             <a href="{{ url_for('customer.view_wishlist') }}" class="oc-icon-btn {{ 'active' if request.endpoint == 'customer.view_wishlist' else '' }}" title="Wishlist">
                 <div class="icon-wrap"><i class="fal fa-heart"></i></div> Wishlist
             </a>
+            {% if current_user.is_authenticated and current_user.role == 'customer' %}
+            <a href="{{ url_for('customer.my_orders') }}" class="oc-icon-btn {{ 'active' if request.endpoint == 'customer.my_orders' else '' }}" title="My Orders">
+                <div class="icon-wrap"><i class="fas fa-bags-shopping"></i></div>
+                Orders
+                <span id="customerOrderBadgeMobile" style="display:none; margin-left:auto; background:#ff7c08; color:#fff; border-radius:999px; min-width:18px; height:18px; line-height:18px; font-size:11px; text-align:center; padding:0 5px;">0</span>
+            </a>
+            {% endif %}
             <a href="{{ url_for('customer.view_cart') }}" class="oc-icon-btn {{ 'active' if request.endpoint == 'customer.view_cart' else '' }}" title="Cart">
                 <div class="icon-wrap"><i class="fas fa-shopping-basket"></i></div> Cart
             </a>
@@ -453,6 +468,62 @@
         });
     })();
     </script>
+    {% if current_user.is_authenticated and current_user.role == 'customer' %}
+    <script>
+    (function () {
+        const orderBadge = document.getElementById('customerOrderBadge');
+        const orderBadgeMobile = document.getElementById('customerOrderBadgeMobile');
+        const apiUrl = "{{ url_for('customer.api_active_orders') }}";
+        const storageKey = 'customerActiveOrdersState';
+        const noticeKey = 'customerLastOrderNoticeTs';
+
+        function setBadgeCount(count) {
+            [orderBadge, orderBadgeMobile].forEach((badge) => {
+                if (!badge) return;
+                if (count > 0) {
+                    badge.style.display = 'inline-block';
+                    badge.textContent = count > 99 ? '99+' : String(count);
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
+        }
+
+        function showStatusNotice(message) {
+            const now = Date.now();
+            const lastShown = Number(localStorage.getItem(noticeKey) || 0);
+            if (now - lastShown < 3000) return;
+            localStorage.setItem(noticeKey, String(now));
+            if (window.alert) window.alert(message);
+        }
+
+        async function pollCustomerOrders() {
+            try {
+                const response = await fetch(apiUrl, { cache: 'no-store' });
+                if (!response.ok) return;
+                const data = await response.json();
+                const orders = Array.isArray(data.orders) ? data.orders : [];
+                setBadgeCount(orders.length);
+
+                const previous = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                const current = {};
+                for (const order of orders) {
+                    current[String(order.id)] = order.status || '';
+                    if (previous[String(order.id)] && previous[String(order.id)] !== (order.status || '')) {
+                        showStatusNotice(`Order #${order.id} updated: ${order.status}`);
+                    }
+                }
+                localStorage.setItem(storageKey, JSON.stringify(current));
+            } catch (e) {
+                // keep polling resilient in production
+            }
+        }
+
+        pollCustomerOrders();
+        setInterval(pollCustomerOrders, 5000);
+    })();
+    </script>
+    {% endif %}
 
     {% block scripts %}{% endblock %}
 

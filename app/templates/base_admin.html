@@ -384,6 +384,7 @@
                         <a class="nav-link {% if request.endpoint in ['admin.all_orders'] %}active{% endif %}" href="{{ url_for('admin.all_orders') }}">
                             <div class="sb-nav-link-icon"><i class="fas fa-shopping-cart"></i></div>
                             All Orders
+                            <span id="adminPendingBadge" class="badge badge-warning text-dark ml-auto" style="display:none;">0</span>
                         </a>
 
                         <div class="sb-sidenav-menu-heading mt-2">Food Types</div>
@@ -411,6 +412,7 @@
         <div id="layoutSidenav_content">
             <main>
                 <div class="container-fluid py-4 position-relative">
+                    <div id="adminRealtimeNotice" style="position: fixed; top: 1rem; right: 1rem; z-index: 1100; min-width: 300px; max-width: 420px;"></div>
                     <!-- Unified Flash Messages -->
                     <div id="flash-container" style="position: absolute; top: 1rem; right: 1rem; z-index: 1050; min-width: 300px;">
                         {% include 'partials/flash_messages.html' %}
@@ -443,6 +445,10 @@
         const rootElement = document.documentElement;
 
         const currentTheme = localStorage.getItem('adminTheme') || 'dark';
+        const pendingBadge = document.getElementById('adminPendingBadge');
+        const realtimeNotice = document.getElementById('adminRealtimeNotice');
+        const notificationsApiUrl = "{{ url_for('admin.order_notifications') }}";
+        let hasBootstrappedPolling = false;
         if (currentTheme === 'light') {
             rootElement.setAttribute('data-theme', 'light');
             themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
@@ -461,7 +467,62 @@
             }
         });
 
-        $('.toast').toast('show');
+        function showRealtimeOrderNotice(order) {
+            if (!realtimeNotice || !order) return;
+            realtimeNotice.innerHTML = `
+                <div class="alert alert-info shadow-sm d-flex align-items-start" role="alert">
+                    <div class="mr-2"><i class="fas fa-bell"></i></div>
+                    <div class="flex-grow-1">
+                        <strong>New platform order #${order.id}</strong><br>
+                        <small>${order.restaurant_name} - ${order.customer_name} - $${Number(order.total_amount).toFixed(2)}</small>
+                        <div class="mt-2">
+                            <a href="{{ url_for('admin.all_orders') }}" class="btn btn-sm btn-primary">View All Orders</a>
+                        </div>
+                    </div>
+                    <button type="button" class="close ml-2" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            `;
+        }
+
+        async function pollAdminNotifications() {
+            try {
+                const response = await fetch(notificationsApiUrl, { cache: 'no-store' });
+                if (!response.ok) return;
+                const data = await response.json();
+                const pendingCount = Number(data.pending_count || 0);
+                const latestOrder = data.latest_order;
+
+                if (pendingBadge) {
+                    if (pendingCount > 0) {
+                        pendingBadge.style.display = 'inline-block';
+                        pendingBadge.textContent = pendingCount;
+                    } else {
+                        pendingBadge.style.display = 'none';
+                    }
+                }
+
+                if (latestOrder && latestOrder.id) {
+                    const storageKey = 'adminLastSeenOrderId';
+                    const lastSeen = Number(localStorage.getItem(storageKey) || 0);
+                    const latestId = Number(latestOrder.id);
+                    if (!hasBootstrappedPolling) {
+                        localStorage.setItem(storageKey, String(Math.max(lastSeen, latestId)));
+                    } else if (latestId > lastSeen) {
+                        showRealtimeOrderNotice(latestOrder);
+                        localStorage.setItem(storageKey, String(latestId));
+                    }
+                }
+                hasBootstrappedPolling = true;
+            } catch (err) {
+                // Keep admin panel stable on transient polling errors.
+            }
+        }
+
+        pollAdminNotifications();
+        setInterval(pollAdminNotifications, 5000);
+
     });
     </script>
     

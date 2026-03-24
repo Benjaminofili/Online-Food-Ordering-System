@@ -1,0 +1,90 @@
+the order page in the profile has a dead button (print)
+Fixes for Registration Flow, Validation Display, and Checkout
+1. Owner Profile Registration Flow
+The system currently redirects newly registered owners to 
+dashboard_info_edit.html
+ via owner.profile. That template is for replacing the customer's personal info and it hardcodes the form action to post to customer.edit_profile (thus triggering "Access denied. Customer only"). Also, it lacks the necessary restaurant fields (name, contact, address, description, logo).
+
+Action:
+
+Create a new template 
+owner_profile.html
+ that extends 
+base_owner.html
+.
+It will contain a form POSTing to owner.profile with the fields: name, 
+contact
+, address, description, and 
+logo
+.
+Modify 
+app/routes/owner.py
+ 
+profile
+ route to render 
+owner_profile.html
+ instead of 
+dashboard_info_edit.html
+.
+2. Sign Up Form Validation Display
+The red "Invalid email address" message (and other validation errors) look squished and overlap the form fields because of a hardcoded inline style: margin-top: -15px.
+
+Action:
+
+Modify 
+app/templates/sign_up.html
+ to remove margin-top: -15px from the error span elements, and apply standard Bootstrap text margins (e.g., mt-1 mb-2).
+3. Checkout Validation Constraints
+The system currently allows customers to check out even if their address and phone number are empty.
+
+Action:
+
+Modify 
+app/routes/customer.py
+ 
+checkout()
+ route. Add a check at the beginning: if current_user.address or current_user.phone is blank, flash a warning: "Please ensure your phone number and delivery address are set in your profile before checking out" and redirect to customer.edit_profile.
+4. Promotional Images for Restaurants
+The user requested the ability to upload promotional pictures of their restaurant (e.g., dining room, storefront) to the media page, as currently only "Menu Image" and "Video" are supported. The 
+RestaurantMedia
+ model's media_type column is a generic String(20) which easily supports this.
+
+Action:
+
+Modify 
+app/templates/owner_media.html
+ to add a "Promotional Image" option to the Media Type dropdown, and add a gallery section to display uploaded promotional images.
+Modify 
+app/routes/owner.py
+'s 
+media
+ route to pass promo_images to the template.
+Modify 
+app/templates/menu_details.html
+ (and potentially 
+dashboard.html
+ / restaurant.html) to display these promotional images if present (e.g., in a carousel or gallery on the restaurant details page).
+Proposed Changes
+[NEW] 
+owner_profile.html
+A new template to capture restaurant information properly.
+
+[MODIFY] 
+owner.py
+Update to render 
+owner_profile.html
+.
+
+[MODIFY] 
+sign_up.html
+Fix the negative margin in WTForms error spans.
+
+[MODIFY] 
+customer.py
+Ensure customers have contact info on file before proceeding to checkout.
+
+
+we hv to redo the notification/alert system for all roles it is too fractured and isolated 
+
+
+after notification refactor link it so that when an action is done the notification is called for e.g i try to login with wrong details and detailed what is wrong e.g (wrong email or password not a generic error occured),or (i order from a restaraunt the notification that an order has come should be passed instanlty to the restaraunt as it is now there is nothing i hv to then manually refresh to see a change which is wrong ) we hv to make then synchronize  

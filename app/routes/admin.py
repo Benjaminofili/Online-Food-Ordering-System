@@ -160,3 +160,22 @@ def restaurants_report():
 def all_orders():
     orders = Order.query.order_by(Order.order_date.desc()).all()
     return render_template('admin_orders.html', orders=orders)
+
+@bp.route('/api/orders/notifications')
+@admin_required
+def order_notifications():
+    """Polling endpoint for admin live order monitoring."""
+    pending_count = Order.query.filter_by(status='pending').count()
+    latest_order = Order.query.order_by(Order.order_date.desc()).first()
+
+    payload = {'pending_count': pending_count, 'latest_order': None}
+    if latest_order:
+        payload['latest_order'] = {
+            'id': latest_order.id,
+            'status': latest_order.status,
+            'restaurant_name': latest_order.restaurant.name if latest_order.restaurant else 'Restaurant',
+            'customer_name': latest_order.customer.name if latest_order.customer else 'Customer',
+            'total_amount': float(latest_order.total_amount),
+            'order_date': latest_order.order_date.isoformat() if latest_order.order_date else None
+        }
+    return payload

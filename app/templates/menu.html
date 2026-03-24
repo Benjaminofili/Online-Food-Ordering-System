@@ -113,6 +113,10 @@
         MENU END
     ==============================-->
 
+    <div class="flash-messages-global">
+        {% include 'partials/flash_messages.html' %}
+    </div>
+
 
     <!--=============================
         BREADCRUMB START
@@ -216,10 +220,10 @@ function submitForm() {
                                 </form>
                                 <ul class="d-flex flex-wrap justify-content-end">
                                     <li>
-                                        <form action="{{ url_for('customer.add_to_wishlist', dish_id=dish.id) }}" method="POST" style="display:inline;">
+                                        {% set is_wishlisted = current_user.is_authenticated and current_user.is_wishlisted(dish.id) %}
+                                        <form action="{{ url_for('customer.' + ('remove_from_wishlist' if is_wishlisted else 'add_to_wishlist'), dish_id=dish.id) }}" method="POST" style="display:inline;">
                                             {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                            <button type="submit" title="Add to Wishlist" class="border-0 bg-transparent" style="width:100%; height:100%; color:inherit;">
-                                                {% set is_wishlisted = current_user.is_authenticated and current_user.is_wishlisted(dish.id) %}
+                                            <button type="submit" title="{{ 'Remove from Wishlist' if is_wishlisted else 'Add to Wishlist' }}" class="border-0 bg-transparent" style="width:100%; height:100%; color:inherit;">
                                                 <i class="{{ 'fas fa-heart text-danger' if is_wishlisted else 'fal fa-heart' }}"></i>
                                             </button>
                                         </form>

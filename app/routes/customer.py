@@ -184,8 +184,9 @@ def restaurant(id):
     reviews = Review.query.filter_by(restaurant_id=restaurant.id).order_by(Review.created_at.desc()).all()
     avg_rating = sum(r.rating for r in reviews) / len(reviews) if reviews else 0
     
-    menus = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='menu').order_by(RestaurantMedia.display_order).all()
+    menus = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='menu_image').order_by(RestaurantMedia.display_order).all()
     videos = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='video').order_by(RestaurantMedia.display_order).all()
+    promo_images = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='promo_image').order_by(RestaurantMedia.display_order).all()
     
     cart = session.get('cart', {})
     cart_items = []
@@ -197,7 +198,7 @@ def restaurant(id):
             cart_total += sub
             cart_items.append({'dish': cart_dish, 'quantity': qty, 'subtotal': sub})
             
-    return render_template('menu_details.html', restaurant=restaurant, dishes=dishes, reviews=reviews, avg_rating=avg_rating, cart_items=cart_items, cart_total=cart_total, menus=menus, videos=videos)
+    return render_template('menu_details.html', restaurant=restaurant, dishes=dishes, reviews=reviews, avg_rating=avg_rating, cart_items=cart_items, cart_total=cart_total, menus=menus, videos=videos, promo_images=promo_images)
 
 @bp.route('/dish/<int:id>')
 @customer_required
@@ -439,9 +440,9 @@ def checkout():
         flash('Your cart is empty.', 'warning')
         return redirect(url_for('customer.dashboard'))
 
-    # Ensure the customer has set their delivery address and phone
-    if not current_user.address or not current_user.phone:
-        flash('Please set your delivery address and phone number in your profile before checking out.', 'warning')
+    # Ensure customer profile has mandatory delivery fields before checkout.
+    if not (current_user.address or '').strip() or not (current_user.phone or '').strip():
+        flash('Please ensure your phone number and delivery address are set in your profile before checking out.', 'warning')
         return redirect(url_for('customer.edit_profile'))
         
     total = 0.0
@@ -571,6 +572,20 @@ def api_active_orders():
         'status': o.status,
         'delivery_time': o.delivery_time.strftime('%I:%M %p') if o.delivery_time else None
     } for o in orders]}
+
+@bp.route('/api/my-orders/feed')
+@customer_required
+def api_orders_feed():
+    """Return recent customer orders for lifecycle synchronization."""
+    orders = Order.query.filter_by(customer_id=current_user.id).order_by(Order.order_date.desc()).limit(20).all()
+    return {
+        'orders': [{
+            'id': o.id,
+            'status': o.status,
+            'total_amount': float(o.total_amount),
+            'order_date': o.order_date.isoformat() if o.order_date else None
+        } for o in orders]
+    }
 
 # ── Static Pages ─────────────────────────────────────────────────────────────
 

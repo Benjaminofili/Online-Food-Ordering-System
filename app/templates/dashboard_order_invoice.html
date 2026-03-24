@@ -98,6 +98,10 @@
         MENU END
     ==============================-->
 
+    <div class="flash-messages-global">
+        {% include 'partials/flash_messages.html' %}
+    </div>
+
 
     <!--=============================
         BREADCRUMB START
@@ -236,8 +240,9 @@
                                             </table>
                                         </div>
                                     </div>
-                                    <a class="print_btn common_btn" href="#"><i class="far fa-print"></i> print
-                                        PDF</a>
+                                    <button type="button" class="print_btn common_btn border-0" onclick="printInvoice()">
+                                        <i class="far fa-print"></i> print PDF
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -362,6 +367,15 @@
 
     <!--main/custom js-->
     <script src="{{ url_for('static', filename='regfood/js/main.js') }}"></script>
+    <script>
+        function printInvoice() {
+            if (typeof window.print !== 'function') {
+                alert('Printing is not available in this browser. Please use your browser menu to save this page as PDF.');
+                return;
+            }
+            window.print();
+        }
+    </script>
 
 
     <!-- ===== OFFCANVAS NAV BACKDROP ===== -->

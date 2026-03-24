@@ -1,11 +1,28 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-        <div class="flash-messages-container" style="position: relative; z-index: 9999;">
+        <style>
+            .flash-messages-container { position: relative; z-index: 9999; }
+            .flash-alert {
+                margin-bottom: 10px;
+                border-radius: 8px;
+                border: none;
+            }
+            .flash-dismiss {
+                background: none;
+                border: none;
+                opacity: 0.5;
+                font-size: 1.2rem;
+                line-height: 1;
+                color: inherit;
+                cursor: pointer;
+            }
+            .flash-dismiss:hover { opacity: 0.85; }
+        </style>
+        <div class="flash-messages-container">
             {% for category, message in messages %}
                 {% set alert_type = category if category in ['success', 'danger', 'warning', 'info'] else 'info' %}
                 {% if category == 'error' %}{% set alert_type = 'danger' %}{% endif %}
-                
-                <div class="alert alert-{{ alert_type }} alert-dismissible fade show shadow-sm" role="alert" style="margin-bottom: 10px; border-radius: 8px;">
+                <div class="alert alert-{{ alert_type }} alert-dismissible fade show shadow-sm flash-alert" role="alert">
                     <div class="d-flex align-items-center">
                         <div class="me-3 mr-3">
                             {% if alert_type == 'success' %}<i class="fas fa-check-circle"></i>
@@ -13,11 +30,8 @@
                             {% elif alert_type == 'warning' %}<i class="fas fa-exclamation-triangle"></i>
                             {% else %}<i class="fas fa-info-circle"></i>{% endif %}
                         </div>
-                        <div class="flex-grow-1">
-                            {{ message }}
-                        </div>
-                        <!-- Support both BS4 and BS5 close buttons -->
-                        <button type="button" class="btn-close close" data-bs-dismiss="alert" data-dismiss="alert" aria-label="Close" style="background: none; border: none; opacity: 0.5;">
+                        <div class="flex-grow-1">{{ message }}</div>
+                        <button type="button" class="flash-dismiss close" data-dismiss="alert" data-bs-dismiss="alert" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>

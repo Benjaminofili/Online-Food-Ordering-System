@@ -101,10 +101,14 @@ def dashboard():
 def profile():
     restaurant = get_restaurant()
     if request.method == 'POST':
-        name = request.form.get('name')
-        address = request.form.get('address')
-        contact = request.form.get('contact')
-        description = request.form.get('description')
+        name = (request.form.get('name') or '').strip()
+        address = (request.form.get('address') or '').strip()
+        contact = (request.form.get('contact') or '').strip()
+        description = (request.form.get('description') or '').strip()
+
+        if not name or not address or not contact:
+            flash('Restaurant name, contact, and address are required.', 'warning')
+            return render_template('owner_profile.html', restaurant=restaurant)
         
         # Handle file upload for logo
         logo_file = request.files.get('logo')
@@ -270,6 +274,56 @@ def orders():
     restaurant_orders = query.order_by(Order.order_date.desc()).all()
     return render_template('owner_orders.html', orders=restaurant_orders)
 
+@bp.route('/api/orders/notifications')
+@owner_required
+def order_notifications():
+    """Lightweight polling endpoint for near real-time owner order updates."""
+    restaurant = get_restaurant()
+    if not restaurant:
+        return {'pending_count': 0, 'latest_order': None}
+
+    pending_count = Order.query.filter_by(
+        restaurant_id=restaurant.id,
+        status='pending'
+    ).count()
+
+    latest_pending = Order.query.filter_by(
+        restaurant_id=restaurant.id,
+        status='pending'
+    ).order_by(Order.order_date.desc()).first()
+
+    latest_order = None
+    if latest_pending:
+        latest_order = {
+            'id': latest_pending.id,
+            'customer_name': latest_pending.customer.name if latest_pending.customer else 'Customer',
+            'total_amount': float(latest_pending.total_amount),
+            'order_date': latest_pending.order_date.isoformat() if latest_pending.order_date else None,
+        }
+
+    return {
+        'pending_count': pending_count,
+        'latest_order': latest_order
+    }
+
+@bp.route('/api/orders/feed')
+@owner_required
+def orders_feed():
+    """Return recent owner orders for in-page lifecycle synchronization."""
+    restaurant = get_restaurant()
+    if not restaurant:
+        return {'orders': []}
+
+    orders = Order.query.filter_by(restaurant_id=restaurant.id).order_by(Order.order_date.desc()).limit(30).all()
+    return {
+        'orders': [{
+            'id': o.id,
+            'status': o.status,
+            'total_amount': float(o.total_amount),
+            'order_date': o.order_date.isoformat() if o.order_date else None
+        } for o in orders]
+    }
+
 @bp.route('/orders/update/<int:id>', methods=['POST'])
 @owner_required
 def update_order(id):
@@ -368,7 +422,7 @@ def media():
         media_type = request.form.get('media_type') # 'menu_image' or 'video'
         
         url = None
-        if media_type == 'menu_image':
+        if media_type in ['menu_image', 'promo_image']:
             image_file = request.files.get('image')
             if image_file and image_file.filename != '':
                 url = upload_file_to_cloudinary(image_file)
@@ -398,8 +452,9 @@ def media():
 
     menus = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='menu_image').order_by(RestaurantMedia.display_order).all()
     videos = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='video').order_by(RestaurantMedia.display_order).all()
+    promo_images = RestaurantMedia.query.filter_by(restaurant_id=restaurant.id, media_type='promo_image').order_by(RestaurantMedia.display_order).all()
     
-    return render_template('owner_media.html', menus=menus, videos=videos)
+    return render_template('owner_media.html', menus=menus, videos=videos, promo_images=promo_images)
 
 @bp.route('/media/delete/<int:id>', methods=['POST'])
 @owner_required

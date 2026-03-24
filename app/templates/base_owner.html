@@ -372,6 +372,7 @@
                         <a class="nav-link {% if request.endpoint == 'owner.orders' %}active{% endif %}" href="{{ url_for('owner.orders') }}">
                             <div class="sb-nav-link-icon"><i class="fas fa-shopping-cart"></i></div>
                             Orders
+                            <span id="ownerPendingBadge" class="badge badge-warning text-dark ml-auto" style="display:none;">0</span>
                         </a>
 
                         <a class="nav-link {% if request.endpoint == 'owner.reviews' %}active{% endif %}" href="{{ url_for('owner.reviews') }}">
@@ -429,6 +430,7 @@
         <div id="layoutSidenav_content">
             <main>
                 <div class="container-fluid py-4 position-relative">
+                    <div id="ownerRealtimeNotice" style="position: fixed; top: 1rem; right: 1rem; z-index: 1100; min-width: 300px; max-width: 420px;"></div>
                     <!-- Unified Flash Messages -->
                     <div id="flash-container" style="position: absolute; top: 1rem; right: 1rem; z-index: 1050; min-width: 300px;">
                         {% include 'partials/flash_messages.html' %}
@@ -463,6 +465,10 @@
     document.addEventListener("DOMContentLoaded", function() {
         const themeToggleBtn = document.getElementById('themeToggle');
         const rootElement = document.documentElement;
+        const pendingBadge = document.getElementById('ownerPendingBadge');
+        const realtimeNotice = document.getElementById('ownerRealtimeNotice');
+        const notificationsApiUrl = "{{ url_for('owner.order_notifications') }}";
+        let hasBootstrappedPolling = false;
 
         const currentTheme = localStorage.getItem('adminTheme') || 'dark';
         if (currentTheme === 'light') {
@@ -483,7 +489,63 @@
             }
         });
 
-        $('.toast').toast('show');
+        function showRealtimeOrderNotice(order) {
+            if (!realtimeNotice || !order) return;
+            const html = `
+                <div class="alert alert-info shadow-sm d-flex align-items-start" role="alert">
+                    <div class="mr-2"><i class="fas fa-bell"></i></div>
+                    <div class="flex-grow-1">
+                        <strong>New order #${order.id}</strong><br>
+                        <small>${order.customer_name} - $${Number(order.total_amount).toFixed(2)}</small>
+                        <div class="mt-2">
+                            <a href="{{ url_for('owner.orders', status='pending') }}" class="btn btn-sm btn-primary">View Pending Orders</a>
+                        </div>
+                    </div>
+                    <button type="button" class="close ml-2" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            `;
+            realtimeNotice.innerHTML = html;
+        }
+
+        async function pollOwnerNotifications() {
+            try {
+                const response = await fetch(notificationsApiUrl, { cache: 'no-store' });
+                if (!response.ok) return;
+                const data = await response.json();
+                const pendingCount = Number(data.pending_count || 0);
+                const latestOrder = data.latest_order;
+
+                if (pendingBadge) {
+                    if (pendingCount > 0) {
+                        pendingBadge.style.display = 'inline-block';
+                        pendingBadge.textContent = pendingCount;
+                    } else {
+                        pendingBadge.style.display = 'none';
+                    }
+                }
+
+                if (latestOrder && latestOrder.id) {
+                    const storageKey = 'ownerLastSeenOrderId';
+                    const lastSeen = Number(localStorage.getItem(storageKey) || 0);
+                    const latestId = Number(latestOrder.id);
+
+                    if (!hasBootstrappedPolling) {
+                        localStorage.setItem(storageKey, String(Math.max(lastSeen, latestId)));
+                    } else if (latestId > lastSeen) {
+                        showRealtimeOrderNotice(latestOrder);
+                        localStorage.setItem(storageKey, String(latestId));
+                    }
+                }
+                hasBootstrappedPolling = true;
+            } catch (err) {
+                // Silent fail to avoid disrupting owner workflow on transient network issues.
+            }
+        }
+
+        pollOwnerNotifications();
+        setInterval(pollOwnerNotifications, 5000);
     });
     </script>
     

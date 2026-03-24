@@ -98,6 +98,10 @@
         MENU END
     ==============================-->
 
+    <div class="flash-messages-global">
+        {% include 'partials/flash_messages.html' %}
+    </div>
+
 
     <!--=============================
         BREADCRUMB START
@@ -135,6 +139,7 @@
                             <div class="dashboard_body">
                                 <h3>order list</h3>
                                 <div class="dashboard_order">
+                                    <div id="customerOrdersRealtimeNotice" class="mb-3"></div>
                                     <div class="table-responsive">
                                         <table class="table">
                                             <thead>
@@ -148,14 +153,14 @@
                                             </thead>
                                             <tbody>
                                                 {% for order in orders %}
-                                                <tr>
+                                                <tr data-order-id="{{ order.id }}">
                                                     <td>
                                                         <h5>#{{ order.id }}</h5>
                                                     </td>
                                                     <td>
                                                         <p>{{ order.order_date.strftime('%B %d, %Y') }}</p>
                                                     </td>
-                                                    <td>
+                                                    <td class="customer-order-status-cell" data-order-id="{{ order.id }}" data-status="{{ order.status }}">
                                                         {% if current_user.role == 'owner' %}
                                                         <form method="POST" action="{{ url_for('owner.update_order', id=order.id) }}" class="d-flex align-items-center">
                                                             <select name="status" class="form-select form-select-sm me-2" style="width: auto;">
@@ -522,6 +527,50 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') close();
         });
+    })();
+
+    (function () {
+        const ordersFeedUrl = "{{ url_for('customer.api_orders_feed') }}";
+        const noticeBox = document.getElementById('customerOrdersRealtimeNotice');
+
+        function showNotice(message) {
+            if (!noticeBox) return;
+            noticeBox.innerHTML = `
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <i class="fas fa-bell mr-2"></i>${message}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            `;
+        }
+
+        async function syncCustomerOrderStatuses() {
+            try {
+                const response = await fetch(ordersFeedUrl, { cache: 'no-store' });
+                if (!response.ok) return;
+                const data = await response.json();
+                const orders = Array.isArray(data.orders) ? data.orders : [];
+                const byId = {};
+                orders.forEach((o) => { byId[String(o.id)] = o.status; });
+
+                document.querySelectorAll('.customer-order-status-cell').forEach((cell) => {
+                    const orderId = cell.getAttribute('data-order-id');
+                    const currentStatus = cell.getAttribute('data-status');
+                    const nextStatus = byId[orderId];
+                    if (!nextStatus || nextStatus === currentStatus) return;
+
+                    cell.setAttribute('data-status', nextStatus);
+                    cell.innerHTML = `<span class="${nextStatus}">${nextStatus}</span>`;
+                    showNotice(`Order #${orderId} updated to "${nextStatus}".`);
+                });
+            } catch (e) {
+                // Keep polling resilient.
+            }
+        }
+
+        syncCustomerOrderStatuses();
+        setInterval(syncCustomerOrderStatuses, 5000);
     })();
     </script>
 

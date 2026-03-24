@@ -113,6 +113,10 @@
         MENU END
     ==============================-->
 
+    <div class="flash-messages-global">
+        {% include 'partials/flash_messages.html' %}
+    </div>
+
 
     <!--=============================
         BREADCRUMB START
@@ -295,6 +299,13 @@
                                     data-bs-target="#pills-menu" type="button" role="tab"
                                     aria-controls="pills-menu" aria-selected="false">Digital Menu</button>
                             </li>
+                            {% if promo_images %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="pills-gallery-tab" data-bs-toggle="pill"
+                                    data-bs-target="#pills-gallery" type="button" role="tab"
+                                    aria-controls="pills-gallery" aria-selected="false">Gallery</button>
+                            </li>
+                            {% endif %}
                         </ul>
                         <div class="tab-content" id="pills-tabContent">
                             <div class="tab-pane fade show active" id="pills-home" role="tabpanel"
@@ -414,6 +425,21 @@
                                     {% endif %}
                                 </div>
                             </div>
+                            {% if promo_images %}
+                            <div class="tab-pane fade" id="pills-gallery" role="tabpanel" aria-labelledby="pills-gallery-tab" tabindex="0">
+                                <div class="row mt-4">
+                                    {% for item in promo_images %}
+                                    <div class="col-md-4 col-sm-6 mb-4">
+                                        <a href="{{ item.url }}" target="_blank" rel="noopener">
+                                            <img src="{{ item.url }}" alt="Restaurant photo {{ loop.index }}"
+                                                 class="img-fluid w-100 shadow-sm"
+                                                 style="height: 220px; object-fit: cover; border-radius: 10px;">
+                                        </a>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -448,10 +474,10 @@
                                 </form>
                                 <ul class="d-flex flex-wrap justify-content-end">
                                     <li>
-                                        <form action="{{ url_for('customer.add_to_wishlist', dish_id=related.id) }}" method="POST" style="display:inline;">
+                                        {% set related_wishlisted = current_user.is_authenticated and current_user.is_wishlisted(related.id) %}
+                                        <form action="{{ url_for('customer.' + ('remove_from_wishlist' if related_wishlisted else 'add_to_wishlist'), dish_id=related.id) }}" method="POST" style="display:inline;">
                                             {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                            <button type="submit" title="Add to Wishlist" class="border-0 bg-transparent" style="width:100%; height:100%; color:inherit;">
-                                                {% set related_wishlisted = current_user.is_authenticated and current_user.is_wishlisted(related.id) %}
+                                            <button type="submit" title="{{ 'Remove from Wishlist' if related_wishlisted else 'Add to Wishlist' }}" class="border-0 bg-transparent" style="width:100%; height:100%; color:inherit;">
                                                 <i class="{{ 'fas fa-heart text-danger' if related_wishlisted else 'fal fa-heart' }}"></i>
                                             </button>
                                         </form>
